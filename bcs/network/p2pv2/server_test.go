@@ -2,12 +2,13 @@ package p2pv2
 
 import (
 	"fmt"
-	xctx "github.com/xuperchain/xupercore/kernel/common/xcontext"
-	"github.com/xuperchain/xupercore/kernel/mock"
-	nctx "github.com/xuperchain/xupercore/kernel/network/context"
-	"github.com/xuperchain/xupercore/kernel/network/p2p"
-	pb "github.com/xuperchain/xupercore/protos"
 	"testing"
+
+	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	"github.com/superconsensus-chain/xupercore/kernel/mock"
+	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
+	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
+	pb "github.com/superconsensus-chain/xupercore/protos"
 )
 
 func Handler(ctx xctx.XContext, msg *pb.XuperMessage) (*pb.XuperMessage, error) {

@@ -12,18 +12,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state/utxo"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state/utxo/txhash"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state/xmodel"
-	txn "github.com/xuperchain/xupercore/bcs/ledger/xledger/tx"
-	pb "github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/contract/sandbox"
-	kledger "github.com/xuperchain/xupercore/kernel/ledger"
-	aclu "github.com/xuperchain/xupercore/kernel/permission/acl/utils"
-	"github.com/xuperchain/xupercore/lib/crypto/client"
-	"github.com/xuperchain/xupercore/lib/metrics"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/utxo"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/utxo/txhash"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/xmodel"
+	txn "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/tx"
+	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/sandbox"
+	kledger "github.com/superconsensus-chain/xupercore/kernel/ledger"
+	aclu "github.com/superconsensus-chain/xupercore/kernel/permission/acl/utils"
+	"github.com/superconsensus-chain/xupercore/lib/crypto/client"
+	"github.com/superconsensus-chain/xupercore/lib/metrics"
+	"github.com/superconsensus-chain/xupercore/protos"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -43,7 +43,7 @@ import (
 func (t *State) ImmediateVerifyTx(tx *pb.Transaction, isRootTx bool) (bool, error) {
 	beginTime := time.Now()
 	code := "InvalidTx"
-	defer func(){
+	defer func() {
 		metrics.CallMethodCounter.WithLabelValues(t.sctx.BCName, "ImmediateVerifyTx", code).Inc()
 		metrics.CallMethodHistogram.WithLabelValues(t.sctx.BCName, "ImmediateVerifyTx").Observe(time.Since(beginTime).Seconds())
 	}()
@@ -913,7 +913,7 @@ func (t *State) verifyDAGTxs(blockHeight int64, txs []*pb.Transaction, isRootTx 
 					return errors.New("dotx failed to ImmediateVerifyAutoTx error")
 				}
 			}
-			if !tx.Autogen && !tx.Coinbase {
+			if !tx.Autogen && !tx.Coinbase &&!tx.ThawCoinbase && !tx.VoteCoinbase{
 				// 校验用户交易
 				if ok, err := t.ImmediateVerifyTx(tx, isRootTx); !ok {
 					t.log.Warn("dotx failed to ImmediateVerifyTx", "txid", fmt.Sprintf("%x", tx.Txid), "err", err)

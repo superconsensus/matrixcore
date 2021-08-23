@@ -3,11 +3,11 @@ package manager
 import (
 	"testing"
 
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	_ "github.com/superconsensus-chain/xupercore/kernel/contract/kernel"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/mock"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/sandbox"
 	log15 "github.com/xuperchain/log15"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	_ "github.com/xuperchain/xupercore/kernel/contract/kernel"
-	"github.com/xuperchain/xupercore/kernel/contract/mock"
-	"github.com/xuperchain/xupercore/kernel/contract/sandbox"
 )
 
 type MockLogger struct {

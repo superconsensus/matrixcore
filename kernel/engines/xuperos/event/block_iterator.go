@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/ledger"
-	pb "github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
+	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
 )
 
 var _ Iterator = (*BlockIterator)(nil)
@@ -70,6 +70,10 @@ func (b *BlockIterator) Block() *pb.InternalBlock {
 }
 
 func (b *BlockIterator) Data() interface{} {
+	return b.Block()
+}
+
+func (b *BlockIterator) Data2() interface{} {
 	return b.Block()
 }
 

@@ -2,9 +2,9 @@ package event
 
 import (
 	"encoding/hex"
-	lpb "github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/xuperchain/xupercore/kernel/contract/sandbox"
-	"github.com/xuperchain/xupercore/protos"
+	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/sandbox"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 var _ Iterator = (*filteredBlockIterator)(nil)
@@ -110,6 +110,10 @@ func (b *filteredBlockIterator) fetchBlock() (*protos.FilteredBlock, bool, error
 
 func (b *filteredBlockIterator) Data() interface{} {
 	return b.block
+}
+
+func (b *filteredBlockIterator) Data2() interface{} {
+	return b.biter.block
 }
 
 func (b *filteredBlockIterator) Error() error {

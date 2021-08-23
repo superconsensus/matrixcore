@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/ledger"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/utils"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/engines/xuperos/common"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/utils"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 var (

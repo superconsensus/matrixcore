@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/protos"
 	"github.com/xuperchain/crypto/core/hash"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/protos"
 
 	"github.com/golang/protobuf/proto"
 )

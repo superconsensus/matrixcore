@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	common "github.com/xuperchain/xupercore/kernel/consensus/base/common"
-	"github.com/xuperchain/xupercore/kernel/contract/proposal/utils"
+	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
 
-	"github.com/xuperchain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
 )
 
 // 本文件实现tdpos的原Run方法，现全部移至三代合约
@@ -34,6 +34,11 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 	if err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
+	////1.1.1 核查分红比的参数有效性
+	//_, err = tp.checkRatio(contractCtx.Args())
+	//if err != nil {
+	//	return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+	//}
 	amountBytes := contractCtx.Args()["amount"]
 	amountStr := string(amountBytes)
 	amount, err := strconv.ParseInt(amountStr, 10, 64)
@@ -49,6 +54,8 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 		"from":      []byte(contractCtx.Initiator()),
 		"amount":    []byte(fmt.Sprintf("%d", amount)),
 		"lock_type": []byte(utils.GovernTokenTypeTDPOS),
+	//	"ratio" : []byte(fmt.Sprintf("%d",ratio)),
+	//	"to": []byte(candidateName),
 	}
 	_, err = contractCtx.Call("xkernel", utils.GovernTokenKernelContract, "Lock", tokenArgs)
 	if err != nil {
@@ -82,6 +89,36 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 	}
 	if err := contractCtx.Put(tp.election.bindContractBucket, []byte(nKey), returnBytes); err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+	}
+	if err := contractCtx.Flush(); err != nil {
+		//fmt.Println("flush error", err.Error())
+		tp.log.Error("flush error", err.Error())
+	}
+	rwSet := contractCtx.RWSet() // 读写集
+	if rwSet.RSet[0].PureData.GetValue() != nil {
+		tempNominateByte := rwSet.RSet[0].PureData.GetValue() // 从读集获取最新数据
+		tempNominateValue := NewNominateValue()
+		if err := json.Unmarshal(tempNominateByte, &tempNominateValue); err != nil { // remind &
+			//fmt.Println("V_unmarshal error", err.Error())
+			tp.log.Error("V_unmarshal error", err.Error())
+		}
+		// 校验高度可以根据实际情况修改
+		if _, ok := tempNominateValue[candidateName]; ok && height >= 1 { // 校验重复提名，校验目标为第一个块之后
+			return common.NewContractErrResponse(common.StatusErr, "Msg_目标已经被提过名"), errors.New("Error_目标已经被提过名")
+			//fmt.Println("Error_目标已经被提过名") // 实际上应该return的，但是这样后加入的节点同步错误块时又会崩溃，，
+		}
+		// 提名时冻结的金额
+		record := make(map[string]int64)
+		record[contractCtx.Initiator()] = amount
+		tempNominateValue[candidateName] = record
+		returnBytes, err := json.Marshal(tempNominateValue)
+		if err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+		// 反序列化后写回
+		if err := contractCtx.Put(tp.election.bindContractBucket, []byte(nKey), returnBytes); err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
 	}
 	delta := contract.Limits{
 		XFee: fee,
@@ -172,6 +209,77 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	if err := contractCtx.Put(tp.election.bindContractBucket, []byte(nKey), nominateBytes); err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
+	if err := contractCtx.Flush(); err != nil {
+		//fmt.Println("flush error", err.Error())
+		tp.log.Error("flush error", err.Error())
+	}
+	rwSet := contractCtx.RWSet() // 读写集
+	//tp.log.Info("rset key", string(rwSet.RSet[0].PureData.GetKey()), "value", string(rwSet.RSet[0].PureData.GetValue()))
+	//fmt.Println("rset", string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
+	//fmt.Println("rset", string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
+	//fmt.Println("rset", string(rwSet.RSet[1].PureData.GetKey()), string(rwSet.RSet[1].PureData.GetValue()))
+	//fmt.Println("rset", string(rwSet.RSet[2].PureData.GetKey()), string(rwSet.RSet[2].PureData.GetValue()))
+	//&& !bytes.Equal(rwSet.RSet[0].PureData.GetValue(), rwSet.WSet[0].GetValue())
+	if rwSet.RSet[0].PureData.GetValue() != nil{
+		// Set[0] --> nominate table
+		// Set[1] --> revoke table add info
+		// Set[2] --> ignore
+		// 更新提名表
+		tempNominateByte := rwSet.RSet[0].PureData.GetValue() // 获取最新数据
+		tempNominateValue := NewNominateValue()
+		if err := json.Unmarshal(tempNominateByte, &tempNominateValue); err != nil {
+			//fmt.Println("V_unmarshal error", err.Error())
+			tp.log.Error("V_unmarshal error", err.Error())
+		}
+		//tp.log.Info("tempNominateValue", tempNominateValue)
+		//fmt.Println("tempNominateValue", tempNominateValue)
+		// 反序列化后得到map，校验对象是否在map中——必要，因为外层的校验读取的不是最新的数据——另外还可能要校验输入amount与表中数据一致问题
+		_, ok := tempNominateValue[candidateName]
+		if !ok {
+			return common.NewContractErrResponse(common.StatusErr, "撤销对象已不在候选列表中"), errors.New("撤销对象已不在候选列表中")
+		}
+		// 存在，将撤销对象从中删除
+		delete(tempNominateValue, candidateName)
+		// 再序列化写回
+		tempNominateBytes, err := json.Marshal(tempNominateValue)
+		if err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+		if err := contractCtx.Put(tp.election.bindContractBucket, []byte(nKey), tempNominateBytes); err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+
+		// 更新撤销记录（其中存储包括撤销投票和撤销提名）
+		tempRevokeByte := rwSet.RSet[1].PureData.GetValue() // 获取最新数据
+		tempRevokeValue := NewRevokeValue()
+		if tempRevokeByte != nil { // 第一次撤销（提名或投票时byte一定为空）
+			if err := json.Unmarshal(tempRevokeByte, &tempRevokeValue); err != nil {
+				//fmt.Println("V_unmarshal error", err.Error())
+				tp.log.Error("V_unmarshal error", err.Error())
+			}
+		}
+		//else{
+		//	fmt.Println("first revoke(nominate or ballot) reads byte nil")
+		//}
+		// 撤销记录中没有对应撤销信息
+		if _, ok := tempRevokeValue[contractCtx.Initiator()]; !ok {
+			tempRevokeValue[contractCtx.Initiator()] = make([]revokeItem, 0)
+		}
+		// append
+		tempRevokeValue[contractCtx.Initiator()] = append(tempRevokeValue[contractCtx.Initiator()], revokeItem{
+			RevokeType:    NOMINATETYPE,
+			Ballot:        ballot,
+			TargetAddress: candidateName,
+		})
+		// 写回
+		tempRevokeBytes, err := json.Marshal(tempRevokeValue)
+		if err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+		if err := contractCtx.Put(tp.election.bindContractBucket, []byte(rKey), tempRevokeBytes); err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+	}
 	delta := contract.Limits{
 		XFee: fee,
 	}
@@ -244,6 +352,32 @@ func (tp *tdposConsensus) runVote(contractCtx contract.KContext) (*contract.Resp
 	if err := contractCtx.Put(tp.election.bindContractBucket, []byte(voteKey), voteBytes); err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
+	// 利用读写集更新数据
+	if err := contractCtx.Flush(); err != nil {
+		fmt.Println("flush error", err.Error())
+	}
+	rwSet := contractCtx.RWSet() // 读写集
+	//fmt.Println("RSet len", len(rwSet.RSet), string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
+	//fmt.Println("WSet len", len(rwSet.WSet), string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
+	if rwSet.RSet[0].PureData.GetValue() != nil {
+		tempByte := rwSet.RSet[0].PureData.GetValue() // 读集中的数据是最新的
+		tempVoteValue := NewvoteValue()
+		if err := json.Unmarshal(tempByte, &tempVoteValue); err != nil { // 记得加&
+			fmt.Println("unmarshal error", err.Error())
+		}
+		number := tempVoteValue[contractCtx.Initiator()] // 从读集中获取的最新票数
+		tempVoteValue[contractCtx.Initiator()] = number + amount
+		//fmt.Println("number", number, "amount", amount)
+		newVoteBytes, err := json.Marshal(tempVoteValue)
+		if err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+		// 更新
+		if err := contractCtx.Put(tp.election.bindContractBucket, []byte(voteKey), newVoteBytes); err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+	}
+
 	delta := contract.Limits{
 		XFee: fee,
 	}
@@ -337,6 +471,60 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 	if err := contractCtx.Put(tp.election.bindContractBucket, []byte(voteKey), voteBytes); err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
+	// 利用读写集更新数据
+	if err := contractCtx.Flush(); err != nil {
+		fmt.Println("flush error", err.Error())
+	}
+	rwSet := contractCtx.RWSet() // 读写集
+	//fmt.Println("RSet revoke", string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
+	//fmt.Println("WSet revoke", string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
+	//fmt.Println("RSet vote", string(rwSet.RSet[1].PureData.GetKey()), string(rwSet.RSet[1].PureData.GetValue()))
+	//fmt.Println("WSet vote", string(rwSet.WSet[1].GetKey()), string(rwSet.WSet[1].GetValue()))
+	if rwSet.RSet[0].PureData.GetValue() != nil {
+		// [1]是vote部分，更新
+		tempByte := rwSet.RSet[1].PureData.GetValue() // 读集中的数据是最新的
+		tempVoteValue := NewvoteValue()
+		if err := json.Unmarshal(tempByte, &tempVoteValue); err != nil { // 加"&"!!!
+			fmt.Println("unmarshal error", err.Error())
+		}
+		number := tempVoteValue[contractCtx.Initiator()] // 从读集中获取的最新票数
+		tempVoteValue[contractCtx.Initiator()] = number - amount
+		if number - amount < 0 {
+			return common.NewContractErrResponse(common.StatusErr, "撤销的票数不能低于对目标所投的票数"), errors.New("撤销的票数不能低于对目标所投的票数")
+		}
+		newVoteBytes, err := json.Marshal(tempVoteValue)
+		if err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+		// 更新
+		if err := contractCtx.Put(tp.election.bindContractBucket, []byte(voteKey), newVoteBytes); err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+
+		// [0]是revoke部分
+		tempRevokeByte := rwSet.RSet[0].PureData.GetValue()
+		tempRevokeValue := NewRevokeValue()
+		if err := json.Unmarshal(tempRevokeByte, &tempRevokeValue); err != nil { // 。。。又是&
+			fmt.Println("unmarshal error", err.Error())
+		}
+		if _, ok := tempRevokeValue[contractCtx.Initiator()]; !ok {
+			tempRevokeValue[contractCtx.Initiator()] = make([]revokeItem, 0)
+		}
+		// append
+		tempRevokeValue[contractCtx.Initiator()] = append(tempRevokeValue[contractCtx.Initiator()], revokeItem{
+			RevokeType:    VOTETYPE,
+			Ballot:        amount,
+			TargetAddress: candidateName,
+		})
+		newRevokeBytes, err := json.Marshal(tempRevokeValue)
+		if err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+		// 更新
+		if err := contractCtx.Put(tp.election.bindContractBucket, []byte(rKey), newRevokeBytes); err != nil {
+			return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		}
+	}
 	delta := contract.Limits{
 		XFee: fee,
 	}
@@ -360,6 +548,20 @@ func (tp *tdposConsensus) checkArgs(txArgs map[string][]byte) (string, int64, er
 		return "", 0, errors.New("Input height invalid. Pls wait seconds.")
 	}
 	return candidateName, height, nil
+}
+
+//检查分红比
+func (tp *tdposConsensus) checkRatio(txArgs map[string][]byte)(int64,error){
+	ratioArg := txArgs["ratio"]
+	ratioName := string(ratioArg)
+	ratio ,error := strconv.ParseInt(ratioName,10,64)
+	if error != nil {
+		return 0,error
+	}
+	if ratio<0 || ratio>100{
+		return 0, errors.New("D__分红比例必须在0-100之间")
+	}
+	return ratio , nil
 }
 
 type nominateValue map[string]map[string]int64

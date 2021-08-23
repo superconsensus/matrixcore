@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/xuperchain/xupercore/lib/cache"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/lib/cache"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 // awardCacheSize system award cache, in avoid of double computing
@@ -55,6 +55,7 @@ type RootConfig struct {
 	IrreversibleSlideWindow string `json:"irreversibleslidewindow"`
 	// GroupChainContract
 	GroupChainContract InvokeRequest `json:"group_chain_contract"`
+	TransferFeeAmount        int64 `json:"transfer_fee_amount"` //转账手续费
 }
 
 // GasPrice define gas rate for utxo
@@ -249,4 +250,9 @@ func (rc *RootConfig) GetGasPrice() *protos.GasPrice {
 		XfeeRate: rc.GasPrice.XfeeRate,
 	}
 	return gasPrice
+}
+
+//添加获取手续费的函数
+func (rc *RootConfig) GetTransferFeeAmount() int64 {
+	return rc.TransferFeeAmount
 }

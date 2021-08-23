@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"time"
 
-	xctx "github.com/xuperchain/xupercore/kernel/common/xcontext"
-	nctx "github.com/xuperchain/xupercore/kernel/network/context"
-	"github.com/xuperchain/xupercore/lib/logs"
-	"github.com/xuperchain/xupercore/lib/timer"
-	pb "github.com/xuperchain/xupercore/protos"
+	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus-chain/xupercore/lib/timer"
+	pb "github.com/superconsensus-chain/xupercore/protos"
 )
 
 var (

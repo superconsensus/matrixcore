@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pbrpc"
+	"github.com/superconsensus-chain/xupercore/protos"
 	log15 "github.com/xuperchain/log15"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/contract/bridge/pb"
-	"github.com/xuperchain/xupercore/kernel/contract/bridge/pbrpc"
-	"github.com/xuperchain/xupercore/protos"
 
 	"google.golang.org/grpc"
 )

@@ -1,12 +1,13 @@
 package bridge
 
 import (
-	"github.com/xuperchain/xupercore/lib/logs"
 	"sync"
 
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/contract/bridge/pb"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 // Context 保存了合约执行的内核状态，

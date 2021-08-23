@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/xuperchain/xupercore/protos";
+option go_package = "github.com/superconsensus-chain/xupercore/protos";
 
 package protos;
 
@@ -40,4 +40,156 @@ message Proposal {
     string proposer = 7;
 }
 
+message ProposalRatio{
+    map<string,int64> user_ratio = 1;
+}
 
+//冻结资产记录表
+message FrozenAssetsTable {
+    string total = 1;
+    //repeated FrozenDetails  frozendetail = 2;
+    map<string , FrozenDetails> frozen_detail = 2;
+    //repeated FrozenDetails  thawdetail = 3;
+    map<string, FrozenDetails> thaw_detail = 3;
+    int64 timestamp = 4;
+}
+message FrozenDetails {
+    // string txid = 1;
+    int64 height = 1;
+    string amount = 2;
+    int64 timestamp = 3;
+    //是否已经解冻
+    // bool isthaw = 3;
+}
+
+message NodeDetails {
+    repeated NodeDetail node_detail =1;
+}
+
+message NodeDetail{
+    string address = 1;
+    int64 height = 2;
+    string amount = 3;
+    //string address = 4;
+}
+
+//节点待解冻的信息
+message NodeTable{
+    map<int64,NodeDetails> node_details =1;
+}
+
+//投票提名记录表
+message CandidateRatio{
+    //总票数
+    string tatal_vote = 1;
+    //分红比率
+    int64 Ratio = 2;
+    //投票的人
+    map<string,string> voting_user = 3;
+    //是否是提名人(取消此提名人后数据不能删除，通过标志位修改)
+    bool is_Nominate = 4;
+    //我投票的人
+    map<string,string> my_voting = 5;
+    //已使用的总票数
+    string used = 6;
+    //被投票的总票数
+    string be_voted_total = 7;
+    //提名候选人记录
+    map<string,NominateDetails> nominate_details = 8;
+}
+
+//缓存表，产块分红读取这个
+message CacheVoteCandidate{
+    //分红比率
+    int64 ratio = 1;
+    //投票的人
+    map<string , string> voting_user = 2;
+    //总票数
+    string total_vote = 3;
+}
+
+//纪录所有提名人，每轮开始的时候用于更新缓存表
+message AllCandidate{
+    map<string,string> candidate = 1;
+    //全网冻结资产
+    string freemonry = 2;
+    //冻结百分比
+    string percentage =3;
+}
+
+message NominateDetails {
+    //抵押的资产
+    string amount = 1;
+    //是否取消提名
+    bool isnominate = 2;
+}
+
+//记录周期term表
+message TermTable{
+    //当前term
+    int64 trem = 1;
+    //是否是新的一个周期
+    bool new_cycle = 2;
+}
+
+
+message PledgeVotingResponse{
+    FrozenAssetsTable frozen_assets_table = 1;
+    repeated VoteDetailsStatus vote_details_status = 2;
+    //投票了多少节点
+    int64 my_vote = 3;
+    //全网冻结总量
+    string freezetotal = 4;
+    //治理代币总量
+    string total_amount = 5;
+    //消耗总量
+    string used_amount = 6;
+    //冻结中
+    string freeze_amount = 7;
+}
+
+message VoteDetailsStatus{
+    string toaddr = 1;
+    int64 ballots = 2;
+    int32 ratio = 3;
+    //当前候选人总票数
+    string totalballots = 4;
+}
+
+message VerificationInfo{
+    //总票数
+    string total = 1;
+    //分成比
+    int32 ratio = 2;
+    //投票百分比
+    string percentage =3;
+    //我的票数
+    string my_total = 4;
+}
+
+message VerificationTable{
+    //验证人
+    map<string , VerificationInfo> verification = 1;
+    //候选验证人
+    map<string , VerificationInfo> candidate = 2;
+    //验证人数量
+    int64 len = 3;
+    //候选人数量
+    int64 len_candidate = 4;
+    //出块倒计时
+    int64 time_left = 5;
+}
+
+//查看链的部分信息
+message BCStatusExplorer{
+    // bolck height
+    int64 height = 1;
+    //全网总资产
+    string total_money = 2;
+    //全网冻结资产
+    string free_monry = 3;
+    //冻结百分比
+    string percentage = 4;
+    //节点数
+    int64 nodes = 5;
+}

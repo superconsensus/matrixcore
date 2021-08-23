@@ -2,13 +2,14 @@ package network
 
 import (
 	"fmt"
-	xctx "github.com/xuperchain/xupercore/kernel/common/xcontext"
 	"testing"
 
-	"github.com/xuperchain/xupercore/kernel/mock"
-	nctx "github.com/xuperchain/xupercore/kernel/network/context"
-	"github.com/xuperchain/xupercore/kernel/network/p2p"
-	pb "github.com/xuperchain/xupercore/protos"
+	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+
+	"github.com/superconsensus-chain/xupercore/kernel/mock"
+	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
+	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
+	pb "github.com/superconsensus-chain/xupercore/protos"
 )
 
 type MockP2PServ struct {

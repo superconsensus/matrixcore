@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/xuperchain/xupercore/kernel/common/xcontext"
-	"github.com/xuperchain/xupercore/kernel/consensus"
-	"github.com/xuperchain/xupercore/kernel/consensus/base"
-	common "github.com/xuperchain/xupercore/kernel/consensus/base/common"
-	chainedBft "github.com/xuperchain/xupercore/kernel/consensus/base/driver/chained-bft"
-	cCrypto "github.com/xuperchain/xupercore/kernel/consensus/base/driver/chained-bft/crypto"
-	chainedBftPb "github.com/xuperchain/xupercore/kernel/consensus/base/driver/chained-bft/pb"
-	cctx "github.com/xuperchain/xupercore/kernel/consensus/context"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/lib/utils"
+	"github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	"github.com/superconsensus-chain/xupercore/kernel/consensus"
+	"github.com/superconsensus-chain/xupercore/kernel/consensus/base"
+	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
+	chainedBft "github.com/superconsensus-chain/xupercore/kernel/consensus/base/driver/chained-bft"
+	cCrypto "github.com/superconsensus-chain/xupercore/kernel/consensus/base/driver/chained-bft/crypto"
+	chainedBftPb "github.com/superconsensus-chain/xupercore/kernel/consensus/base/driver/chained-bft/pb"
+	cctx "github.com/superconsensus-chain/xupercore/kernel/consensus/context"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/lib/utils"
 
-	"github.com/xuperchain/xupercore/kernel/consensus/def"
-	"github.com/xuperchain/xupercore/lib/logs"
+	"github.com/superconsensus-chain/xupercore/kernel/consensus/def"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
 )
 
 func init() {
@@ -160,6 +160,7 @@ Again:
 	// 查当前时间的term 和 pos
 	term, pos, blockPos := tp.election.minerScheduling(time.Now().UnixNano())
 	if blockPos < 0 || blockPos >= tp.election.blockNum || pos >= tp.election.proposerNum {
+		//走到这个里面，就是新的一轮了
 		tp.log.Debug("Tdpos::CompeteMaster::minerScheduling err", "term", term, "pos", pos, "blockPos", blockPos)
 		goto Again
 	}
@@ -212,7 +213,7 @@ func (tp *tdposConsensus) CheckMinerMatch(ctx xcontext.XContext, block cctx.Bloc
 		tp.log.Debug("Tdpos::CheckMinerMatch::invalid proposer", "want", wantProposers[pos], "have", string(block.GetProposer()))
 		return false, invalidProposerErr
 	}
-	
+
 	if !tp.election.enableChainedBFT {
 		return true, nil
 	}

@@ -1,13 +1,14 @@
 package sandbox
 
 import (
-	"github.com/xuperchain/xupercore/kernel/contract"
 	"math/big"
 	"math/rand"
 	"sort"
 	"testing"
 
-	"github.com/xuperchain/xupercore/kernel/ledger"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+
+	"github.com/superconsensus-chain/xupercore/kernel/ledger"
 )
 
 func TestXMCachePutGet(t *testing.T) {

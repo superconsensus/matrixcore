@@ -15,15 +15,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/xuperchain/xupercore/kernel/common/xaddress"
-	"github.com/xuperchain/xupercore/kernel/network"
-	"github.com/xuperchain/xupercore/kernel/network/config"
-	nctx "github.com/xuperchain/xupercore/kernel/network/context"
-	"github.com/xuperchain/xupercore/kernel/network/def"
-	"github.com/xuperchain/xupercore/kernel/network/p2p"
-	"github.com/xuperchain/xupercore/lib/logs"
-	"github.com/xuperchain/xupercore/lib/metrics"
-	pb "github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/kernel/common/xaddress"
+	"github.com/superconsensus-chain/xupercore/kernel/network"
+	"github.com/superconsensus-chain/xupercore/kernel/network/config"
+	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
+	"github.com/superconsensus-chain/xupercore/kernel/network/def"
+	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus-chain/xupercore/lib/metrics"
+	pb "github.com/superconsensus-chain/xupercore/protos"
 )
 
 const (
@@ -168,7 +168,7 @@ func (p *P2PServerV1) SendP2PMessage(stream pb.P2PService_SendP2PMessageServer) 
 		tm := time.Now()
 		defer func() {
 			labels := prom.Labels{
-				metrics.LabelBCName: msg.GetHeader().GetBcname(),
+				metrics.LabelBCName:      msg.GetHeader().GetBcname(),
 				metrics.LabelMessageType: msg.GetHeader().GetType().String(),
 			}
 			metrics.NetworkMsgReceivedCounter.With(labels).Inc()

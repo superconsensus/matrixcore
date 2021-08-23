@@ -1,10 +1,10 @@
 package mock
 
 import (
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/xuperchain/xupercore/kernel/contract/bridge/pb"
-	"github.com/xuperchain/xupercore/kernel/ledger"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
+	"github.com/superconsensus-chain/xupercore/kernel/ledger"
 )
 
 type fakeChainCore struct {

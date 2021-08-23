@@ -11,15 +11,15 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/def"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/ledger"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state/context"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state/utxo/txhash"
-	pb "github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/xuperchain/xupercore/lib/logs"
-	"github.com/xuperchain/xupercore/lib/storage/kvdb"
-	"github.com/xuperchain/xupercore/lib/utils"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/def"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/context"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/utxo/txhash"
+	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
+	"github.com/superconsensus-chain/xupercore/lib/utils"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 var (
@@ -82,6 +82,25 @@ func GenerateAwardTx(address, awardAmount string, desc []byte) (*pb.Transaction,
 	utxoTx.TxOutputs = append(utxoTx.TxOutputs, txOutput)
 	utxoTx.Desc = desc
 	utxoTx.Coinbase = true
+	utxoTx.Timestamp = time.Now().UnixNano()
+	utxoTx.Txid, _ = txhash.MakeTransactionID(utxoTx)
+	return utxoTx, nil
+}
+
+//生成投票奖励的交易
+func GenerateVoteAwardTx(address []byte, awardAmount string, desc []byte) (*pb.Transaction, error) {
+	utxoTx := &pb.Transaction{Version: TxVersion}
+	amount := big.NewInt(0)
+	amount.SetString(awardAmount, 10) // 10进制转换大整数
+	if amount.Cmp(big.NewInt(0)) < 0 {
+		return nil, ErrNegativeAmount
+	}
+	txOutput := &protos.TxOutput{}
+	txOutput.ToAddr = []byte(address)
+	txOutput.Amount = amount.Bytes()
+	utxoTx.TxOutputs = append(utxoTx.TxOutputs, txOutput)
+	utxoTx.Desc = desc
+	utxoTx.VoteCoinbase = true //是否为投票所得
 	utxoTx.Timestamp = time.Now().UnixNano()
 	utxoTx.Txid, _ = txhash.MakeTransactionID(utxoTx)
 	return utxoTx, nil

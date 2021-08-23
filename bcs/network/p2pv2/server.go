@@ -4,18 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	prom "github.com/prometheus/client_golang/prometheus"
-	"github.com/xuperchain/xupercore/lib/metrics"
 	"time"
 
-	"github.com/xuperchain/xupercore/kernel/common/xaddress"
-	knet "github.com/xuperchain/xupercore/kernel/network"
-	"github.com/xuperchain/xupercore/kernel/network/config"
-	nctx "github.com/xuperchain/xupercore/kernel/network/context"
-	"github.com/xuperchain/xupercore/kernel/network/p2p"
-	"github.com/xuperchain/xupercore/lib/logs"
-	pb "github.com/xuperchain/xupercore/protos"
+	"github.com/golang/protobuf/proto"
+	prom "github.com/prometheus/client_golang/prometheus"
+	"github.com/superconsensus-chain/xupercore/lib/metrics"
+
+	"github.com/superconsensus-chain/xupercore/kernel/common/xaddress"
+	knet "github.com/superconsensus-chain/xupercore/kernel/network"
+	"github.com/superconsensus-chain/xupercore/kernel/network/config"
+	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
+	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+	pb "github.com/superconsensus-chain/xupercore/protos"
 
 	ipfsaddr "github.com/ipfs/go-ipfs-addr"
 	"github.com/libp2p/go-libp2p"
@@ -24,7 +25,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
-	"github.com/libp2p/go-libp2p-kad-dht"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	record "github.com/libp2p/go-libp2p-record"
 	secio "github.com/libp2p/go-libp2p-secio"
 	"github.com/multiformats/go-multiaddr"
@@ -325,7 +326,7 @@ func (p *P2PServerV2) HandleMessage(stream p2p.Stream, msg *pb.XuperMessage) err
 		tm := time.Now()
 		defer func() {
 			labels := prom.Labels{
-				metrics.LabelBCName: msg.GetHeader().GetBcname(),
+				metrics.LabelBCName:      msg.GetHeader().GetBcname(),
 				metrics.LabelMessageType: msg.GetHeader().GetType().String(),
 			}
 			metrics.NetworkMsgReceivedCounter.With(labels).Inc()

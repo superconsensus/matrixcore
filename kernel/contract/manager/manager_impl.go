@@ -3,13 +3,14 @@ package manager
 import (
 	"errors"
 	"fmt"
-	"github.com/xuperchain/xupercore/lib/logs"
 	"path/filepath"
 
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/contract/bridge"
-	"github.com/xuperchain/xupercore/kernel/contract/sandbox"
-	"github.com/xuperchain/xupercore/kernel/permission/acl/utils"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/sandbox"
+	"github.com/superconsensus-chain/xupercore/kernel/permission/acl/utils"
 )
 
 type managerImpl struct {

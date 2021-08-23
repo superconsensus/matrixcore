@@ -1,4 +1,4 @@
-module github.com/xuperchain/xupercore
+module github.com/superconsensus-chain/xupercore
 
 go 1.14
 

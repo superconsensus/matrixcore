@@ -1,9 +1,10 @@
 package leveldb
 
 import (
-	"github.com/xuperchain/xupercore/lib/storage/kvdb"
 	"math/rand"
 	"testing"
+
+	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
 )
 
 const (
@@ -34,7 +35,7 @@ func RandBytes(n int) []byte {
 func makeDB() (kvdb.Database, error) {
 	kvParam := &kvdb.KVParameter{
 		DBPath:                "./leveldb",
-		KVEngineType: 		   "leveldb",
+		KVEngineType:          "leveldb",
 		StorageType:           "single",
 		MemCacheSize:          128,
 		FileHandlersCacheSize: 1024,
@@ -76,7 +77,6 @@ func BenchmarkLdbBatch_Put(b *testing.B) {
 		batch.Write()
 	}
 }
-
 
 func BenchmarkLdbBatch_ParallelPut(b *testing.B) {
 	db, err := makeDB()

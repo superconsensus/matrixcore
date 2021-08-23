@@ -4,7 +4,7 @@ import "xupercore/protos/contract.proto";
 import "xupercore/protos/ledger.proto";
 import "xupercore/protos/permission.proto";
 
-option go_package = "github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb";
+option go_package = "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb";
 
 package xldgpb;
 
@@ -131,6 +131,10 @@ message Transaction {
     ModifyBlock modify_block = 32;
     // HD加解密相关信息
     HDInfo HD_info = 33;
+    //投票奖励
+    bool vote_coinbase = 34;
+    //解冻，凭空产生的消耗
+    bool thaw_coinbase = 35;
 }
 
 // Ledger metadata

@@ -8,10 +8,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	prom "github.com/prometheus/client_golang/prometheus"
 
-	xctx "github.com/xuperchain/xupercore/kernel/common/xcontext"
-	"github.com/xuperchain/xupercore/kernel/network/p2p"
-	"github.com/xuperchain/xupercore/lib/metrics"
-	pb "github.com/xuperchain/xupercore/protos"
+	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
+	"github.com/superconsensus-chain/xupercore/lib/metrics"
+	pb "github.com/superconsensus-chain/xupercore/protos"
 )
 
 var (
@@ -25,7 +25,7 @@ func (p *P2PServerV1) SendMessage(ctx xctx.XContext, msg *pb.XuperMessage, optFu
 		tm := time.Now()
 		defer func() {
 			labels := prom.Labels{
-				metrics.LabelBCName: msg.GetHeader().GetBcname(),
+				metrics.LabelBCName:      msg.GetHeader().GetBcname(),
 				metrics.LabelMessageType: msg.GetHeader().GetType().String(),
 			}
 			metrics.NetworkMsgSendCounter.With(labels).Inc()
@@ -85,7 +85,7 @@ func (p *P2PServerV1) SendMessageWithResponse(ctx xctx.XContext, msg *pb.XuperMe
 		tm := time.Now()
 		defer func() {
 			labels := prom.Labels{
-				metrics.LabelBCName: msg.GetHeader().GetBcname(),
+				metrics.LabelBCName:      msg.GetHeader().GetBcname(),
 				metrics.LabelMessageType: msg.GetHeader().GetType().String(),
 			}
 			metrics.NetworkMsgSendCounter.With(labels).Inc()

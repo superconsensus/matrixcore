@@ -6,19 +6,19 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
 
-	"github.com/xuperchain/xupercore/bcs/network/p2pv2"
-	xctx "github.com/xuperchain/xupercore/kernel/common/xcontext"
-	"github.com/xuperchain/xupercore/kernel/consensus/context"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/contract/bridge/pb"
-	"github.com/xuperchain/xupercore/kernel/ledger"
-	"github.com/xuperchain/xupercore/kernel/mock"
-	nctx "github.com/xuperchain/xupercore/kernel/network/context"
-	"github.com/xuperchain/xupercore/kernel/network/p2p"
-	"github.com/xuperchain/xupercore/lib/utils"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/bcs/network/p2pv2"
+	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	"github.com/superconsensus-chain/xupercore/kernel/consensus/context"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
+	"github.com/superconsensus-chain/xupercore/kernel/ledger"
+	"github.com/superconsensus-chain/xupercore/kernel/mock"
+	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
+	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
+	"github.com/superconsensus-chain/xupercore/lib/utils"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 var (

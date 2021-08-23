@@ -1,9 +1,10 @@
 package contract
 
 import (
-	"github.com/xuperchain/xupercore/kernel/ledger"
-	"github.com/xuperchain/xupercore/protos"
 	"math/big"
+
+	"github.com/superconsensus-chain/xupercore/kernel/ledger"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 type SandboxConfig struct {

@@ -7,22 +7,22 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/state/xmodel"
-	"github.com/xuperchain/xupercore/bcs/ledger/xledger/tx"
-	lpb "github.com/xuperchain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/xuperchain/xupercore/kernel/common/xaddress"
-	xctx "github.com/xuperchain/xupercore/kernel/common/xcontext"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	"github.com/xuperchain/xupercore/kernel/engines/xuperos/agent"
-	"github.com/xuperchain/xupercore/kernel/engines/xuperos/common"
-	"github.com/xuperchain/xupercore/kernel/engines/xuperos/miner"
-	"github.com/xuperchain/xupercore/kernel/engines/xuperos/parachain"
-	"github.com/xuperchain/xupercore/lib/logs"
-	"github.com/xuperchain/xupercore/lib/metrics"
-	"github.com/xuperchain/xupercore/lib/timer"
-	"github.com/xuperchain/xupercore/lib/utils"
-	"github.com/xuperchain/xupercore/protos"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/xmodel"
+	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/tx"
+	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus-chain/xupercore/kernel/common/xaddress"
+	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/agent"
+	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
+	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/miner"
+	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/parachain"
+	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus-chain/xupercore/lib/metrics"
+	"github.com/superconsensus-chain/xupercore/lib/timer"
+	"github.com/superconsensus-chain/xupercore/lib/utils"
+	"github.com/superconsensus-chain/xupercore/protos"
 )
 
 const (
@@ -242,6 +242,10 @@ func (t *Chain) PreExec(ctx xctx.XContext, reqs []*protos.InvokeRequest, initiat
 		Responses:   responses,
 		UtxoInputs:  utxoRWSet.Rset,
 		UtxoOutputs: utxoRWSet.WSet,
+	}
+	//非无币模式下这儿转账加个手续费,不得低于1000000
+	if invokeResponse.GasUsed < 1000000 && !t.ctx.Ledger.GetNoFee(){
+		invokeResponse.GasUsed = 1000000
 	}
 
 	return invokeResponse, nil

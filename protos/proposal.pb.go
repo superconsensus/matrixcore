@@ -314,7 +314,7 @@ func (m *ProposalRatio) GetUserRatio() map[string]int64 {
 	return nil
 }
 
-//¶³½á×Ê²ú¼ÇÂ¼±í
+//å†»ç»“èµ„äº§è®°å½•è¡¨
 type FrozenAssetsTable struct {
 	Total string `protobuf:"bytes,1,opt,name=total,proto3" json:"total,omitempty"`
 	//repeated FrozenDetails  frozendetail = 2;
@@ -530,7 +530,7 @@ func (m *NodeDetail) GetAmount() string {
 	return ""
 }
 
-//½Úµã´ı½â¶³µÄĞÅÏ¢
+//èŠ‚ç‚¹å¾…è§£å†»çš„ä¿¡æ¯
 type NodeTable struct {
 	NodeDetails          map[int64]*NodeDetails `protobuf:"bytes,1,rep,name=node_details,json=nodeDetails,proto3" json:"node_details,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
@@ -570,23 +570,23 @@ func (m *NodeTable) GetNodeDetails() map[int64]*NodeDetails {
 	return nil
 }
 
-//Í¶Æ±ÌáÃû¼ÇÂ¼±í
+//æŠ•ç¥¨æåè®°å½•è¡¨
 type CandidateRatio struct {
-	//×ÜÆ±Êı
+	//æ€»ç¥¨æ•°
 	TatalVote string `protobuf:"bytes,1,opt,name=tatal_vote,json=tatalVote,proto3" json:"tatal_vote,omitempty"`
-	//·Öºì±ÈÂÊ
+	//åˆ†çº¢æ¯”ç‡
 	Ratio int64 `protobuf:"varint,2,opt,name=Ratio,proto3" json:"Ratio,omitempty"`
-	//Í¶Æ±µÄÈË
+	//æŠ•ç¥¨çš„äºº
 	VotingUser map[string]string `protobuf:"bytes,3,rep,name=voting_user,json=votingUser,proto3" json:"voting_user,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//ÊÇ·ñÊÇÌáÃûÈË(È¡Ïû´ËÌáÃûÈËºóÊı¾İ²»ÄÜÉ¾³ı£¬Í¨¹ı±êÖ¾Î»ĞŞ¸Ä)
+	//æ˜¯å¦æ˜¯æåäºº(å–æ¶ˆæ­¤æåäººåæ•°æ®ä¸èƒ½åˆ é™¤ï¼Œé€šè¿‡æ ‡å¿—ä½ä¿®æ”¹)
 	Is_Nominate bool `protobuf:"varint,4,opt,name=is_Nominate,json=isNominate,proto3" json:"is_Nominate,omitempty"`
-	//ÎÒÍ¶Æ±µÄÈË
+	//æˆ‘æŠ•ç¥¨çš„äºº
 	MyVoting map[string]string `protobuf:"bytes,5,rep,name=my_voting,json=myVoting,proto3" json:"my_voting,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//ÒÑÊ¹ÓÃµÄ×ÜÆ±Êı
+	//å·²ä½¿ç”¨çš„æ€»ç¥¨æ•°
 	Used string `protobuf:"bytes,6,opt,name=used,proto3" json:"used,omitempty"`
-	//±»Í¶Æ±µÄ×ÜÆ±Êı
+	//è¢«æŠ•ç¥¨çš„æ€»ç¥¨æ•°
 	BeVotedTotal string `protobuf:"bytes,7,opt,name=be_voted_total,json=beVotedTotal,proto3" json:"be_voted_total,omitempty"`
-	//ÌáÃûºòÑ¡ÈË¼ÇÂ¼
+	//æåå€™é€‰äººè®°å½•
 	NominateDetails      map[string]*NominateDetails `protobuf:"bytes,8,rep,name=nominate_details,json=nominateDetails,proto3" json:"nominate_details,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
@@ -674,13 +674,13 @@ func (m *CandidateRatio) GetNominateDetails() map[string]*NominateDetails {
 	return nil
 }
 
-//»º´æ±í£¬²ú¿é·Öºì¶ÁÈ¡Õâ¸ö
+//ç¼“å­˜è¡¨ï¼Œäº§å—åˆ†çº¢è¯»å–è¿™ä¸ª
 type CacheVoteCandidate struct {
-	//·Öºì±ÈÂÊ
+	//åˆ†çº¢æ¯”ç‡
 	Ratio int64 `protobuf:"varint,1,opt,name=ratio,proto3" json:"ratio,omitempty"`
-	//Í¶Æ±µÄÈË
+	//æŠ•ç¥¨çš„äºº
 	VotingUser map[string]string `protobuf:"bytes,2,rep,name=voting_user,json=votingUser,proto3" json:"voting_user,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//×ÜÆ±Êı
+	//æ€»ç¥¨æ•°
 	TotalVote            string   `protobuf:"bytes,3,opt,name=total_vote,json=totalVote,proto3" json:"total_vote,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -733,12 +733,12 @@ func (m *CacheVoteCandidate) GetTotalVote() string {
 	return ""
 }
 
-//¼ÍÂ¼ËùÓĞÌáÃûÈË£¬Ã¿ÂÖ¿ªÊ¼µÄÊ±ºòÓÃÓÚ¸üĞÂ»º´æ±í
+//çºªå½•æ‰€æœ‰æåäººï¼Œæ¯è½®å¼€å§‹çš„æ—¶å€™ç”¨äºæ›´æ–°ç¼“å­˜è¡¨
 type AllCandidate struct {
 	Candidate map[string]string `protobuf:"bytes,1,rep,name=candidate,proto3" json:"candidate,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//È«Íø¶³½á×Ê²ú
+	//å…¨ç½‘å†»ç»“èµ„äº§
 	Freemonry string `protobuf:"bytes,2,opt,name=freemonry,proto3" json:"freemonry,omitempty"`
-	//¶³½á°Ù·Ö±È
+	//å†»ç»“ç™¾åˆ†æ¯”
 	Percentage           string   `protobuf:"bytes,3,opt,name=percentage,proto3" json:"percentage,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -792,9 +792,9 @@ func (m *AllCandidate) GetPercentage() string {
 }
 
 type NominateDetails struct {
-	//µÖÑºµÄ×Ê²ú
+	//æŠµæŠ¼çš„èµ„äº§
 	Amount string `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount,omitempty"`
-	//ÊÇ·ñÈ¡ÏûÌáÃû
+	//æ˜¯å¦å–æ¶ˆæå
 	Isnominate           bool     `protobuf:"varint,2,opt,name=isnominate,proto3" json:"isnominate,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -840,11 +840,11 @@ func (m *NominateDetails) GetIsnominate() bool {
 	return false
 }
 
-//¼ÇÂ¼ÖÜÆÚterm±í
+//è®°å½•å‘¨æœŸtermè¡¨
 type TermTable struct {
-	//µ±Ç°term
+	//å½“å‰term
 	Trem int64 `protobuf:"varint,1,opt,name=trem,proto3" json:"trem,omitempty"`
-	//ÊÇ·ñÊÇĞÂµÄÒ»¸öÖÜÆÚ
+	//æ˜¯å¦æ˜¯æ–°çš„ä¸€ä¸ªå‘¨æœŸ
 	NewCycle             bool     `protobuf:"varint,2,opt,name=new_cycle,json=newCycle,proto3" json:"new_cycle,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -893,15 +893,15 @@ func (m *TermTable) GetNewCycle() bool {
 type PledgeVotingResponse struct {
 	FrozenAssetsTable *FrozenAssetsTable   `protobuf:"bytes,1,opt,name=frozen_assets_table,json=frozenAssetsTable,proto3" json:"frozen_assets_table,omitempty"`
 	VoteDetailsStatus []*VoteDetailsStatus `protobuf:"bytes,2,rep,name=vote_details_status,json=voteDetailsStatus,proto3" json:"vote_details_status,omitempty"`
-	//Í¶Æ±ÁË¶àÉÙ½Úµã
+	//æŠ•ç¥¨äº†å¤šå°‘èŠ‚ç‚¹
 	MyVote int64 `protobuf:"varint,3,opt,name=my_vote,json=myVote,proto3" json:"my_vote,omitempty"`
-	//È«Íø¶³½á×ÜÁ¿
+	//å…¨ç½‘å†»ç»“æ€»é‡
 	Freezetotal string `protobuf:"bytes,4,opt,name=freezetotal,proto3" json:"freezetotal,omitempty"`
-	//ÖÎÀí´ú±Ò×ÜÁ¿
+	//æ²»ç†ä»£å¸æ€»é‡
 	TotalAmount string `protobuf:"bytes,5,opt,name=total_amount,json=totalAmount,proto3" json:"total_amount,omitempty"`
-	//ÏûºÄ×ÜÁ¿
+	//æ¶ˆè€—æ€»é‡
 	UsedAmount string `protobuf:"bytes,6,opt,name=used_amount,json=usedAmount,proto3" json:"used_amount,omitempty"`
-	//¶³½áÖĞ
+	//å†»ç»“ä¸­
 	FreezeAmount         string   `protobuf:"bytes,7,opt,name=freeze_amount,json=freezeAmount,proto3" json:"freeze_amount,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -986,7 +986,7 @@ type VoteDetailsStatus struct {
 	Toaddr  string `protobuf:"bytes,1,opt,name=toaddr,proto3" json:"toaddr,omitempty"`
 	Ballots int64  `protobuf:"varint,2,opt,name=ballots,proto3" json:"ballots,omitempty"`
 	Ratio   int32  `protobuf:"varint,3,opt,name=ratio,proto3" json:"ratio,omitempty"`
-	//µ±Ç°ºòÑ¡ÈË×ÜÆ±Êı
+	//å½“å‰å€™é€‰äººæ€»ç¥¨æ•°
 	Totalballots         string   `protobuf:"bytes,4,opt,name=totalballots,proto3" json:"totalballots,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1047,13 +1047,13 @@ func (m *VoteDetailsStatus) GetTotalballots() string {
 }
 
 type VerificationInfo struct {
-	//×ÜÆ±Êı
+	//æ€»ç¥¨æ•°
 	Total string `protobuf:"bytes,1,opt,name=total,proto3" json:"total,omitempty"`
-	//·Ö³É±È
+	//åˆ†æˆæ¯”
 	Ratio int32 `protobuf:"varint,2,opt,name=ratio,proto3" json:"ratio,omitempty"`
-	//Í¶Æ±°Ù·Ö±È
+	//æŠ•ç¥¨ç™¾åˆ†æ¯”
 	Percentage string `protobuf:"bytes,3,opt,name=percentage,proto3" json:"percentage,omitempty"`
-	//ÎÒµÄÆ±Êı
+	//æˆ‘çš„ç¥¨æ•°
 	MyTotal              string   `protobuf:"bytes,4,opt,name=my_total,json=myTotal,proto3" json:"my_total,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1114,15 +1114,15 @@ func (m *VerificationInfo) GetMyTotal() string {
 }
 
 type VerificationTable struct {
-	//ÑéÖ¤ÈË
+	//éªŒè¯äºº
 	Verification map[string]*VerificationInfo `protobuf:"bytes,1,rep,name=verification,proto3" json:"verification,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//ºòÑ¡ÑéÖ¤ÈË
+	//å€™é€‰éªŒè¯äºº
 	Candidate map[string]*VerificationInfo `protobuf:"bytes,2,rep,name=candidate,proto3" json:"candidate,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//ÑéÖ¤ÈËÊıÁ¿
+	//éªŒè¯äººæ•°é‡
 	Len int64 `protobuf:"varint,3,opt,name=len,proto3" json:"len,omitempty"`
-	//ºòÑ¡ÈËÊıÁ¿
+	//å€™é€‰äººæ•°é‡
 	LenCandidate int64 `protobuf:"varint,4,opt,name=len_candidate,json=lenCandidate,proto3" json:"len_candidate,omitempty"`
-	//³ö¿éµ¹¼ÆÊ±
+	//å‡ºå—å€’è®¡æ—¶
 	TimeLeft             int64    `protobuf:"varint,5,opt,name=time_left,json=timeLeft,proto3" json:"time_left,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1189,17 +1189,17 @@ func (m *VerificationTable) GetTimeLeft() int64 {
 	return 0
 }
 
-//²é¿´Á´µÄ²¿·ÖĞÅÏ¢
+//æŸ¥çœ‹é“¾çš„éƒ¨åˆ†ä¿¡æ¯
 type BCStatusExplorer struct {
 	// bolck height
 	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
-	//È«Íø×Ü×Ê²ú
+	//å…¨ç½‘æ€»èµ„äº§
 	TotalMoney string `protobuf:"bytes,2,opt,name=total_money,json=totalMoney,proto3" json:"total_money,omitempty"`
-	//È«Íø¶³½á×Ê²ú
+	//å…¨ç½‘å†»ç»“èµ„äº§
 	FreeMonry string `protobuf:"bytes,3,opt,name=free_monry,json=freeMonry,proto3" json:"free_monry,omitempty"`
-	//¶³½á°Ù·Ö±È
+	//å†»ç»“ç™¾åˆ†æ¯”
 	Percentage string `protobuf:"bytes,4,opt,name=percentage,proto3" json:"percentage,omitempty"`
-	//½ÚµãÊı
+	//èŠ‚ç‚¹æ•°
 	Nodes                int64    `protobuf:"varint,5,opt,name=nodes,proto3" json:"nodes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

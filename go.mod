@@ -9,6 +9,7 @@ require (
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.1-0.20201118132343-79df803e554c
 	github.com/fsouza/go-dockerclient v1.6.0
+	github.com/gammazero/deque v0.1.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3

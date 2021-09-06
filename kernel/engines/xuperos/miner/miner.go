@@ -756,19 +756,29 @@ func (t *Miner) getTimerTx(height int64) (*lpb.Transaction, error) {
 }
 
 func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
-	unconfirmedTxs, err := t.ctx.State.GetUnconfirmedTx(false)
+	unconfirmedTxs, err := t.ctx.State.GetUnconfirmedTx(false, sizeLimit)
 	if err != nil {
 		return nil, err
 	}
+	//return unconfirmedTxs, nil
+	// txList := make([]*lpb.Transaction, 0)
+	// for _, tx := range unconfirmedTxs {
+	// 	size := proto.Size(tx)
+	// 	if size > sizeLimit {
+	// 		break
+	// 	}
+	// 	sizeLimit -= size
+	// 	txList = append(txList, tx)
+	// }
 
 	txList := make([]*lpb.Transaction, 0)
 	allTxs:
-	for _, tx := range unconfirmedTxs {
-		size := proto.Size(tx)
+	for _, txx := range unconfirmedTxs {
+		size := proto.Size(txx)
 		if size > sizeLimit {
 			break
 		}
-		for _, request := range tx.ContractRequests {
+		for _, request := range txx.ContractRequests {
 			if request.ModuleName == "xkernel" && request.ContractName == "$govern_token" && request.MethodName == "BonusObtain" {
 				args := request.Args
 				realHeight, _ := big.NewInt(0).SetString(string(args["height"]), 10)
@@ -779,7 +789,7 @@ func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
 			}
 		}
 		sizeLimit -= size
-		txList = append(txList, tx)
+		txList = append(txList, txx)
 	}
 
 	return txList, nil

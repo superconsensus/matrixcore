@@ -161,6 +161,7 @@ func (p *P2PServerV2) sendMessageWithResponse(ctx xctx.XContext, msg *pb.XuperMe
 
 	respCh := make(chan *pb.XuperMessage, len(peerIDs))
 	var wg sync.WaitGroup
+	ctx.GetLog().Debug("sendMessageWithResponse peers", "peers", peerIDs)
 	for _, peerID := range peerIDs {
 		wg.Add(1)
 		go func(peerID peer.ID) {

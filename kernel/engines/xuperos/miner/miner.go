@@ -26,7 +26,7 @@ import (
 
 const (
 	tickOnCalcBlock           = time.Second
-	syncOnstatusChangeTimeout = 10 * time.Second
+	syncOnstatusChangeTimeout = 1 * time.Minute
 
 	statusFollowing = 0
 	statusMining    = 1
@@ -76,6 +76,13 @@ func (t *Miner) Start() {
 
 	var err error
 	t.status = statusFollowing
+
+	ctx := &xctx.BaseCtx{
+		XLog:  t.log,
+		Timer: timer.NewXTimer(),
+	}
+	t.syncWithNeighbors(ctx)
+
 	// 启动矿工循环
 	for !t.IsExit() {
 		err = t.step()
@@ -780,7 +787,7 @@ func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
 	// }
 
 	txList := make([]*lpb.Transaction, 0)
-	allTxs:
+allTxs:
 	for _, txx := range unconfirmedTxs {
 		size := proto.Size(txx)
 		if size > sizeLimit {
@@ -790,7 +797,7 @@ func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
 			if request.ModuleName == "xkernel" && request.ContractName == "$govern_token" && request.MethodName == "BonusObtain" {
 				args := request.Args
 				realHeight, _ := big.NewInt(0).SetString(string(args["height"]), 10)
-				if realHeight.Int64() - t.ctx.Ledger.GetMeta().TrunkHeight != 2 {
+				if realHeight.Int64()-t.ctx.Ledger.GetMeta().TrunkHeight != 2 {
 					// 外层循环的continue
 					continue allTxs
 				}
@@ -825,7 +832,7 @@ func (t *Miner) getAwardTx(height int64, flag bool) (*lpb.Transaction, *big.Int,
 }
 
 //构建解冻交易
-func (t * Miner)GetThawTx(height int64,ctx xctx.XContext)([]*lpb.Transaction, error) {
+func (t *Miner) GetThawTx(height int64, ctx xctx.XContext) ([]*lpb.Transaction, error) {
 	//先获取节点冻结信息
 	txs := []*lpb.Transaction{}
 	keytable := "nodeinfo_" + "tdos_thaw_total_assets"
@@ -837,29 +844,30 @@ func (t * Miner)GetThawTx(height int64,ctx xctx.XContext)([]*lpb.Transaction, er
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, NodeTable)
 	if parserErr != nil {
-		return nil , parserErr
+		return nil, parserErr
 	}
 	batch := t.ctx.Ledger.ConfirmBatch
 	//batch.Reset()
 	value, ok := NodeTable.NodeDetails[height]
 	if ok {
-		for _, data := range value.NodeDetail{
+		for _, data := range value.NodeDetail {
 			Address := data.Address
 			//反转转账,只是凭空构建，交易不记录总资产
-			tx, error := t.ctx.State.ReverseTx(Address,batch,data.Amount)
+			tx, error := t.ctx.State.ReverseTx(Address, batch, data.Amount)
 			if error != nil {
-				ctx.GetLog().Warn("D__反转转账构造交易失败","error",error)
+				ctx.GetLog().Warn("D__反转转账构造交易失败", "error", error)
 				return nil, error
 			}
 			txs = append(txs, tx)
 		}
-	}else {
+	} else {
 		return nil, nil
 	}
 
 	//fmt.Printf("D__解冻交易拼接成功\n")
 	return txs, nil
 }
+
 // 分红到账奖励，不需要clear到账时顺手delete了
 func (t *Miner) GetBonusTx(height int64, ctx xctx.XContext) ([]*lpb.Transaction, error) {
 	//先获取节点冻结信息

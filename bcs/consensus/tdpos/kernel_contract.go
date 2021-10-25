@@ -59,7 +59,7 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 	}
 	_, err = contractCtx.Call("xkernel", utils.GovernTokenKernelContract, "Lock", tokenArgs)
 	if err != nil {
-		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		return common.NewContractErrResponse(common.StatusErr, err.Error()), errors.New("提名失败，治理代币余额不足")
 	}
 
 	// 2. 读取提名候选人key
@@ -95,12 +95,13 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 		tp.log.Error("flush error", err.Error())
 	}
 	rwSet := contractCtx.RWSet() // 读写集
+	// set[0] tdpos_0_nominate; set[1] balanceOf_SmJG3rH2ZzYQ9ojxhbRCPwFiE9y6pD1Co
 	if rwSet.RSet[0].PureData.GetValue() != nil {
 		tempNominateByte := rwSet.RSet[0].PureData.GetValue() // 从读集获取最新数据
 		tempNominateValue := NewNominateValue()
 		if err := json.Unmarshal(tempNominateByte, &tempNominateValue); err != nil { // remind &
 			//fmt.Println("V_unmarshal error", err.Error())
-			tp.log.Error("V_unmarshal error", err.Error())
+			tp.log.Error("V__提名表反序列化失败", err.Error(), "bytes", tempNominateByte)
 		}
 		// 校验高度可以根据实际情况修改
 		if _, ok := tempNominateValue[candidateName]; ok && height >= 1 { // 校验重复提名，校验目标为第一个块之后
@@ -166,6 +167,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	}
 	_, err = contractCtx.Call("xkernel", utils.GovernTokenKernelContract, "UnLock", tokenArgs)
 	if err != nil {
+		//return common.NewContractErrResponse(common.StatusErr, err.Error()), errors.New("撤销提名失败，（治理）余额不足")
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
 
@@ -214,22 +216,24 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 		tp.log.Error("flush error", err.Error())
 	}
 	rwSet := contractCtx.RWSet() // 读写集
+	// [0] tdpos_0_nominate; [1] tdpos_0_revoke; [2] balanceOf_SmJG3rH2ZzYQ9ojxhbRCPwFiE9y6pD1Co
 	//tp.log.Info("rset key", string(rwSet.RSet[0].PureData.GetKey()), "value", string(rwSet.RSet[0].PureData.GetValue()))
 	//fmt.Println("rset", string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
 	//fmt.Println("rset", string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
 	//fmt.Println("rset", string(rwSet.RSet[1].PureData.GetKey()), string(rwSet.RSet[1].PureData.GetValue()))
 	//fmt.Println("rset", string(rwSet.RSet[2].PureData.GetKey()), string(rwSet.RSet[2].PureData.GetValue()))
 	//&& !bytes.Equal(rwSet.RSet[0].PureData.GetValue(), rwSet.WSet[0].GetValue())
-	if rwSet.RSet[0].PureData.GetValue() != nil{
+	// 兼容旧版本已经上链的交易，用高度过滤本判断，如果链从零开始运行则可忽略高度条件
+	if ( rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil ) /*&& height > 1920000*/{
 		// Set[0] --> nominate table
 		// Set[1] --> revoke table add info
-		// Set[2] --> ignore
+		// Set[2] --> 被撤销提名的用户治理代币balance
 		// 更新提名表
 		tempNominateByte := rwSet.RSet[0].PureData.GetValue() // 获取最新数据
 		tempNominateValue := NewNominateValue()
 		if err := json.Unmarshal(tempNominateByte, &tempNominateValue); err != nil {
 			//fmt.Println("V_unmarshal error", err.Error())
-			tp.log.Error("V_unmarshal error", err.Error())
+			tp.log.Error("V__撤销提名-提名表反序列化失败", err.Error(), "bytes", tempNominateByte)
 		}
 		//tp.log.Info("tempNominateValue", tempNominateValue)
 		//fmt.Println("tempNominateValue", tempNominateValue)
@@ -255,7 +259,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 		if tempRevokeByte != nil { // 第一次撤销（提名或投票时byte一定为空）
 			if err := json.Unmarshal(tempRevokeByte, &tempRevokeValue); err != nil {
 				//fmt.Println("V_unmarshal error", err.Error())
-				tp.log.Error("V_unmarshal error", err.Error())
+				tp.log.Error("V__撤销提名-撤销记录表反序列化失败", err.Error(), "bytes", tempRevokeByte)
 			}
 		}
 		//else{
@@ -310,7 +314,9 @@ func (tp *tdposConsensus) runVote(contractCtx contract.KContext) (*contract.Resp
 	}
 	_, err = contractCtx.Call("xkernel", utils.GovernTokenKernelContract, "Lock", tokenArgs)
 	if err != nil {
-		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		// err1: lock gov tokens failed, query account balance error——对应完全没有购买过治理代币
+		// err2: lock gov tokens failed, account available balance insufficient——对应买过治理代币，但本次投票量>剩余可用代币
+		return common.NewContractErrResponse(common.StatusErr, err.Error()), errors.New("投票失败，治理代币余额不足")
 	}
 	// 1.3 检查vote的地址是否在候选人池中，快照读取候选人池，vote相关参数一定是会在nominate列表中显示
 	res, err := tp.election.getSnapshotKey(height, tp.election.bindContractBucket, []byte(fmt.Sprintf("%s_%d_%s", tp.status.Name, tp.status.Version, nominateKey)))
@@ -357,13 +363,14 @@ func (tp *tdposConsensus) runVote(contractCtx contract.KContext) (*contract.Resp
 		fmt.Println("flush error", err.Error())
 	}
 	rwSet := contractCtx.RWSet() // 读写集
-	//fmt.Println("RSet len", len(rwSet.RSet), string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
-	//fmt.Println("WSet len", len(rwSet.WSet), string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
+	// [0] tdpos_0_vote_TeyyPLpp9L7QAcxHangtcHTu7HUZ6iydY; [1] balanceOf_TeyyPLpp9L7QAcxHangtcHTu7HUZ6iydY
+	//fmt.Println("投票RSet len", len(rwSet.RSet), string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
+	//fmt.Println("投票WSet len", len(rwSet.WSet), string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
 	if rwSet.RSet[0].PureData.GetValue() != nil {
 		tempByte := rwSet.RSet[0].PureData.GetValue() // 读集中的数据是最新的
 		tempVoteValue := NewvoteValue()
 		if err := json.Unmarshal(tempByte, &tempVoteValue); err != nil { // 记得加&
-			fmt.Println("unmarshal error", err.Error())
+			tp.log.Warn("V__投票数据反序列化失败", err.Error(), "bytes", tempByte)
 		}
 		number := tempVoteValue[contractCtx.Initiator()] // 从读集中获取的最新票数
 		tempVoteValue[contractCtx.Initiator()] = number + amount
@@ -476,16 +483,17 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 		fmt.Println("flush error", err.Error())
 	}
 	rwSet := contractCtx.RWSet() // 读写集
+	// [0] tdpos_0_revoke; [1] tdpos_0_vote_TeyyPLpp9L7QAcxHangtcHTu7HUZ6iydY; [2] balance
 	//fmt.Println("RSet revoke", string(rwSet.RSet[0].PureData.GetKey()), string(rwSet.RSet[0].PureData.GetValue()))
 	//fmt.Println("WSet revoke", string(rwSet.WSet[0].GetKey()), string(rwSet.WSet[0].GetValue()))
 	//fmt.Println("RSet vote", string(rwSet.RSet[1].PureData.GetKey()), string(rwSet.RSet[1].PureData.GetValue()))
 	//fmt.Println("WSet vote", string(rwSet.WSet[1].GetKey()), string(rwSet.WSet[1].GetValue()))
-	if rwSet.RSet[0].PureData.GetValue() != nil {
+	if rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil {
 		// [1]是vote部分，更新
 		tempByte := rwSet.RSet[1].PureData.GetValue() // 读集中的数据是最新的
 		tempVoteValue := NewvoteValue()
 		if err := json.Unmarshal(tempByte, &tempVoteValue); err != nil { // 加"&"!!!
-			fmt.Println("unmarshal error", err.Error())
+			tp.log.Warn("V__revoke_vote_unmarshal error", err.Error(), "bytes", tempByte)
 		}
 		number := tempVoteValue[contractCtx.Initiator()] // 从读集中获取的最新票数
 		tempVoteValue[contractCtx.Initiator()] = number - amount
@@ -505,7 +513,7 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 		tempRevokeByte := rwSet.RSet[0].PureData.GetValue()
 		tempRevokeValue := NewRevokeValue()
 		if err := json.Unmarshal(tempRevokeByte, &tempRevokeValue); err != nil { // 。。。又是&
-			fmt.Println("unmarshal error", err.Error())
+			tp.log.Warn("V__revoke_unmarshal error", err.Error(), "bytes", tempRevokeByte)
 		}
 		if _, ok := tempRevokeValue[contractCtx.Initiator()]; !ok {
 			tempRevokeValue[contractCtx.Initiator()] = make([]revokeItem, 0)

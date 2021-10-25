@@ -2,7 +2,7 @@ package govern_token
 
 import (
 	"fmt"
-
+	rledger "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
 	xledger "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
 	"github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
 	"github.com/superconsensus-chain/xupercore/kernel/contract"
@@ -27,6 +27,8 @@ type GovCtx struct {
 	BcName   string
 	Ledger   LedgerRely
 	Contract contract.Manager
+	// 增加真正的账本字段
+	RealLedger *rledger.Ledger
 }
 
 func NewGovCtx(bcName string, leg LedgerRely, contract contract.Manager) (*GovCtx, error) {

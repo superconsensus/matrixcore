@@ -1,8 +1,12 @@
 package meta
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
+	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"strconv"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -92,10 +96,153 @@ func NewMeta(sctx *context.StateCtx, stateDB kvdb.Database) (*Meta, error) {
 		sctx.XLog.Warn("failed to load groupchain from disk", "loadErr", loadErr)
 		return nil, loadErr
 	}
+	// load award
+	/*obj.Meta.Award, loadErr = obj.LoadAward()
+	if loadErr != nil {
+		sctx.XLog.Warn("V__failed to load award from disk", "loadErr", loadErr)
+		return nil, loadErr
+	}*/
+	// load transferFeeAmount
+	obj.Meta.TransferFeeAmount, loadErr = obj.LoadTransferFeeAmount()
+	if loadErr != nil {
+		sctx.XLog.Warn("V__failed to load transferFeeAmount from disk", "loadErr", loadErr)
+		return nil, loadErr
+	}
 	newMeta := proto.Clone(obj.Meta).(*pb.UtxoMeta)
 	obj.MetaTmp = newMeta
 
 	return obj, nil
+}
+
+// 执行更新
+func (t *Meta) RunUpdateConfig(contractCtx contract.KContext) (*contract.Response, error) {
+	//if t.Ledger == nil {
+	//	return fmt.Errorf("账本未实例化，更新转账手续费失败")
+	//}
+	cfg, err := t.proposalArgsUnmarshal(contractCtx.Args())
+	if err != nil {
+		t.log.Warn("V__meta提案参数格式错误", "error", err.Error())
+		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+	}
+	// 修改RootConfig参数
+	t.Meta.TransferFeeAmount = cfg.TransferFeeAmount
+	batch := t.Ledger.ConfirmBatch
+	batch.Reset()
+	// 更新meta中的txFee，实际手续费的校验判断都是用meta的数据
+	updateErr := t.UpdateConfig(cfg, batch)
+	if updateErr != nil {
+		t.log.Warn("V__meta更新失败", "err", updateErr.Error())
+		return common.NewContractErrResponse(common.StatusErr, updateErr.Error()), updateErr
+	}
+	// 记录系统配置更新
+	t.log.Info("V__系统配置更新成功", "新值", cfg)
+	return common.NewContractOKResponse([]byte("ok")), nil
+}
+
+// 解析提案参数
+func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootConfig, error) {
+	if _, ok := ctxArgs["height"]; !ok {
+		t.log.Error("V__meta提案缺失生效高度参数height")
+		return nil, errors.New("缺失提案生效高度参数height")
+	}
+	// 参数反序列化
+	args := make(map[string]interface{})
+	jErr := json.Unmarshal(ctxArgs["args"], &args)
+	if jErr != nil {
+		t.log.Error("V__配置文件反序列化失败", "err", jErr)
+		return nil, jErr
+	}
+	// 提案文件至少需要包含下面的一个参数
+	_, ok1 := args["txFee"]
+	//_, ok2 := args["award"]
+	_, ok3 := args["noFee"]
+	if !(ok3 || ok1 /*|| ok2*/) {
+		t.log.Error("V__meta提案缺失参数，txFee、noFee两个至少需要一个")
+		return nil, errors.New("meta提案缺失参数，txFee、noFee两个至少需要一个")
+	}
+	value, ok := args["noFee"].(bool)
+	_, ok4 := args["gasPrice"]
+	if ok && !value && !ok4{ // 如果ok3-noFee-存在且值为F（F表示需要手续费），且ok4-gasPrice-缺失，报错
+		t.log.Error("V__meta提案设置需要手续费模式时，gasPrice参数不能缺失")
+		return nil, errors.New("V__meta提案设置需要手续费时，gasPrice参数不能缺失")
+	}
+	var (
+		txfee int64
+		//award int64
+		nofee bool
+		gasBytes []byte
+		//gas ledger.GasPrice
+		gas struct {
+			CpuRate  int64 `json:"cpu_rate"`
+			MemRate  int64 `json:"mem_rate"`
+			DiskRate int64 `json:"disk_rate"`
+			XfeeRate int64 `json:"xfee_rate"`
+		}
+		err error
+	)
+	// 手续费 int64，提案中应为int字符串
+	if ok1 {
+		txfee , err = strconv.ParseInt(args["txFee"].(string), 10, 64)
+		if err != nil {
+			t.log.Error("V__meta提案修改转账手续费参数类型错误", "err", err)
+			return nil, err
+		}
+	}
+	// 出块奖励 string，提案中应该int字符串
+	/*if ok2 {
+		award, err = strconv.ParseInt(args["award"].(string), 10, 64)
+		if err != nil {
+			t.log.Error("V__meta提案出块奖励参数类型错误", "err", err)
+			return nil, err
+		}
+		if award == 0 {
+			t.log.Error("V__出块奖励不能为0")
+			return nil, errors.New("V__出块奖励不能为0")
+		}
+	}*/
+	// 是否需要手续费模式 bool
+	if ok3 { // 提案包含noFee参数
+		nofee, ok = args["noFee"].(bool)
+		if !ok {
+			t.log.Error("V__meta提案noFee参数要求是bool型")
+			return nil, errors.New("V__meta提案noFee参数要求是bool型")
+		}
+		// 有了前面的校验，能执行到这里自然是有gasPrice字段的
+		if !nofee { // 需要手续费的情况下才修改config.gasPrice
+			gasMap, _ := args["gasPrice"].(map[string]interface{})
+			gasBytes, _ = json.Marshal(&gasMap)
+			err := json.Unmarshal(gasBytes, &gas)
+			if err != nil {
+				t.log.Error("V__meta提案gasPrice参数反序列化失败","err", err)
+				return nil, errors.New("V__meta提案gasPrice参数反序列化失败")
+			}
+			// gas四个字段要么全0（无需手续费模式），要么全非0（需要手续费模式）；此层判断要求全非0
+			if gas.MemRate == 0 || gas.CpuRate == 0 || gas.DiskRate == 0 || gas.XfeeRate == 0 {
+				t.log.Error("V__meta提案需要手续费时，gasPrice四个子字段参数都不能缺失或为0")
+				return nil, errors.New("V__meta提案需要手续费时，gasPrice四个子字段参数都不能缺失或为0")
+			}
+			// 需要手续费模式，txFee不能为0
+			if txfee == 0 {
+				t.log.Error("V__meta提案需要手续费模式时，txFee参数不能为0或缺失")
+				return nil, errors.New("V__meta提案需要手续费模式时，txFee参数不能为0或缺失")
+			}
+		}
+	}else {
+		/* 如果没有该参数，下面RootConfig的NoFee字段默认传false，因此需要读取原先配置防止误改
+		 * 举个例子，如果原先配置NoFee是true，但是提案中没有noFee字段
+		 * 执行update时接收到的cfg中noFee就是false，分辨不了提案原意有没有修改
+		 * award和txFee可以通过判0识别所以可以忽略
+		 * 如果提案不包含noFee参数，gasPrice传默认0就行
+		 */
+		nofee = t.Ledger.GetNoFee()
+	}
+	return &ledger.RootConfig{
+		// todo 其它参数待添加
+		TransferFeeAmount: txfee,
+		//Award: strconv.FormatInt(award,10),
+		NoFee: nofee,
+		GasPrice: gas,
+	}, nil
 }
 
 // GetNewAccountResourceAmount get account for creating an account
@@ -144,6 +291,122 @@ func (t *Meta) UpdateNewAccountResourceAmount(newAccountResourceAmount int64, ba
 	defer t.MutexMeta.Unlock()
 	t.MetaTmp.NewAccountResourceAmount = newAccountResourceAmount
 	return err
+}
+
+// 从账本中加载最新的出块奖励，如果没有就获取创世区块中定义的
+/*func (t *Meta) LoadAward() (string, error) {
+	awardBuf, findErr := t.MetaTable.Get([]byte(ledger.AwardKey))
+	if findErr == nil {
+		utxoMeta := &pb.UtxoMeta{}
+		err := proto.Unmarshal(awardBuf, utxoMeta)
+		return utxoMeta.GetAward(), err
+	} else if def.NormalizedKVError(findErr) == def.ErrKVNotFound {
+		genesisAward := t.Ledger.GetAward()
+		award, err := strconv.ParseInt(genesisAward, 10, 64)
+		if award < 0 || err != nil {
+			return genesisAward, errors.New("V__提案转账手续费非法（负数）或格式错误")
+		}
+		return genesisAward, nil
+	}
+	return "0", findErr
+}*/
+
+// 获取当前的出块奖励
+/*func (t *Meta) GetAward() string {
+	t.MutexMeta.Lock()
+	defer t.MutexMeta.Unlock()
+	return t.Meta.GetAward()
+}*/
+
+// 从账本中加载最新的手续费，如果没有就获取创世区块中定义的
+func (t *Meta) LoadTransferFeeAmount() (int64, error) {
+	transferFeeAmountBuf, findErr := t.MetaTable.Get([]byte(ledger.TransferFeeAmountKey))
+	if findErr == nil {
+		utxoMeta := &pb.UtxoMeta{}
+		err := proto.Unmarshal(transferFeeAmountBuf, utxoMeta)
+		return utxoMeta.GetTransferFeeAmount(), err
+	} else if def.NormalizedKVError(findErr) == def.ErrKVNotFound {
+		genesisTransferFeeAmount := t.Ledger.GetTransferFeeAmount()
+		if genesisTransferFeeAmount < 0 {
+			return genesisTransferFeeAmount, errors.New("V__提案转账手续费非法（负数）")
+		}
+		return genesisTransferFeeAmount, nil
+	}
+	return int64(0), findErr
+}
+
+// 获取当前的转账手续费
+func (t *Meta) GetTransferFeeAmount() int64 {
+	t.MutexMeta.Lock()
+	defer t.MutexMeta.Unlock()
+	return t.Meta.GetTransferFeeAmount()
+}
+
+// 更新配置，同时将其记录到账本中
+func (t *Meta) UpdateConfig(cfg *ledger.RootConfig, batch kvdb.Batch) error {
+	if cfg.TransferFeeAmount < 0 {
+		return errors.New("V__提案的转账手续费参数不能为负数")
+		//return errors.New("V__提案的转账手续费参数必须为正数；如需免手续费模式，请通过提案noFee方式修改")
+	}
+	tmpMeta := &pb.UtxoMeta{}
+	// 转账手续费
+	if cfg.TransferFeeAmount != 0 {
+		newMeta := proto.Clone(tmpMeta).(*pb.UtxoMeta)
+		newMeta.TransferFeeAmount = cfg.TransferFeeAmount
+		transferFeeAmountBuf, pbErr := proto.Marshal(newMeta)
+		if pbErr != nil {
+			t.log.Warn("V__update TxFee序列化meta失败")
+			return pbErr
+		}
+		tErr := batch.Put([]byte(pb.MetaTablePrefix+ledger.TransferFeeAmountKey), transferFeeAmountBuf)
+		if tErr == nil{
+			t.log.Info("V__更新转账手续费transferFeeAmount成功")
+		}
+	}
+	// 出块奖励
+	/*if cfg.Award != "0" {
+		awardMeta := proto.Clone(tmpMeta).(*pb.UtxoMeta)
+		awardMeta.Award = cfg.Award
+		awardBuf, pbErr := proto.Marshal(awardMeta)
+		if pbErr != nil {
+			t.log.Warn("V__update Award序列化meta失败")
+			return pbErr
+		}
+		aErr := batch.Put([]byte(pb.MetaTablePrefix+ledger.AwardKey), awardBuf)
+		if aErr == nil {
+			t.log.Info("V__更新出块奖励award成功")
+		}
+	}*/
+
+	t.MutexMeta.Lock()
+	// 转账手续费
+	if cfg.TransferFeeAmount != 0 {
+		// 这里一定要注意改的是MetaTmp，直接改Meta无效
+		t.MetaTmp.TransferFeeAmount = cfg.TransferFeeAmount
+		// 更新ledger.genesisBlk中的txFee，最好与meta保持一致
+		t.Ledger.GenesisBlock.GetConfig().TransferFeeAmount = cfg.TransferFeeAmount
+	}
+	// 出块奖励
+	/*if cfg.Award != "0" {
+		t.MetaTmp.Award = cfg.Award
+		t.Ledger.GenesisBlock.GetConfig().Award = cfg.Award
+	}*/
+	// 无需手续费模式
+	t.Ledger.GenesisBlock.GetConfig().NoFee = cfg.NoFee
+	gas := &protos.GasPrice{} // 字段默认有零值
+	if !cfg.NoFee { // 提案noFee模式为F，表示需要手续费
+		gas.CpuRate = cfg.GasPrice.CpuRate
+		gas.MemRate = cfg.GasPrice.MemRate
+		gas.DiskRate = cfg.GasPrice.DiskRate
+		gas.XfeeRate = cfg.GasPrice.XfeeRate
+	}
+	// 前面锁过了，updateGasPrice中也会有锁，这里要先释放，避免死锁
+	t.MutexMeta.Unlock()
+	gErr := t.UpdateGasPrice(gas, batch)
+	if gErr == nil {
+		t.log.Info("V__meta提案更新gasPrice成功")
+	}
+	return nil
 }
 
 // GetMaxBlockSize get max block size effective in Utxo
@@ -517,5 +780,9 @@ func (t *Meta) UpdateGasPrice(nextGasPrice *protos.GasPrice, batch kvdb.Batch) e
 	t.MutexMeta.Lock()
 	defer t.MutexMeta.Unlock()
 	t.MetaTmp.GasPrice = nextGasPrice
+	t.Ledger.GenesisBlock.GetConfig().GasPrice.CpuRate = nextGasPrice.CpuRate
+	t.Ledger.GenesisBlock.GetConfig().GasPrice.MemRate = nextGasPrice.MemRate
+	t.Ledger.GenesisBlock.GetConfig().GasPrice.DiskRate = nextGasPrice.DiskRate
+	t.Ledger.GenesisBlock.GetConfig().GasPrice.XfeeRate = nextGasPrice.XfeeRate
 	return nil
 }

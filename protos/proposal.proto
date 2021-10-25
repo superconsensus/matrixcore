@@ -78,6 +78,38 @@ message NodeTable{
     map<int64,NodeDetails> node_details =1;
 }
 
+// 分红数据，分为奖励池与提现队列（map结构）两个部分
+message AllBonusData {
+    // 所有分红奖励池
+    map<string, Pool> BonusPools = 1;
+    // 提现分红奖励队列，到账高度---分红奖励
+    map<int64, BonusRewardDiscount> DiscountQueue = 2;
+}
+
+// 分红奖励池结构
+message Pool {
+    // 每票奖励
+    string BonusPerVote = 1;
+    // 池子总票数
+    string TotalVotes = 2;
+    // 投此分红奖励池子的投票者信息
+    map<string, Voter> Voters = 3;
+}
+
+// 投票者信息
+message Voter {
+    // 票数
+    string Amount = 1;
+    // 债务
+    string Debt = 2;
+}
+
+// 分红奖励提现map
+message BonusRewardDiscount {
+    // 用户---提现数量
+    map<string, string> UserDiscount = 1;
+}
+
 //投票提名记录表
 message CandidateRatio{
     //总票数

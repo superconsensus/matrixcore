@@ -133,6 +133,7 @@ func (t *Chain) PreExec(ctx xctx.XContext, reqs []*protos.InvokeRequest, initiat
 
 	reqs = append(reservedRequests, reqs...)
 	if len(reqs) <= 0 {
+		// 转账操作（包括转账给合约账户）时reqs为空，创建合约账户、部署合约、调用合约方法非空
 		return &protos.InvokeResponse{}, nil
 	}
 
@@ -244,8 +245,11 @@ func (t *Chain) PreExec(ctx xctx.XContext, reqs []*protos.InvokeRequest, initiat
 		UtxoOutputs: utxoRWSet.WSet,
 	}
 	//非无币模式下这儿转账加个手续费,不得低于1000000
-	if invokeResponse.GasUsed < 1000000 && !t.ctx.Ledger.GetNoFee(){
-		invokeResponse.GasUsed = 1000000
+	// 获取配置的转账手续费
+	fee := t.ctx.State.GetMeta().GetTransferFeeAmount()
+	// fee := t.ctx.Ledger.GetTransferFeeAmount() // 同样可以实现
+	if invokeResponse.GasUsed < fee && !t.ctx.Ledger.GetNoFee(){
+		invokeResponse.GasUsed = fee
 	}
 
 	return invokeResponse, nil
@@ -253,6 +257,7 @@ func (t *Chain) PreExec(ctx xctx.XContext, reqs []*protos.InvokeRequest, initiat
 
 // 提交交易到交易池(xuperos引擎同时更新到状态机和交易池)
 func (t *Chain) SubmitTx(ctx xctx.XContext, tx *lpb.Transaction) error {
+	//fmt.Printf("---chain submit tx---\ntxid>>%#v\ninput>>%#v\noutput>>%#v\n", hex.EncodeToString(tx.Txid), tx.TxInputs, tx.TxOutputs)
 	if tx == nil || ctx == nil || ctx.GetLog() == nil || len(tx.GetTxid()) <= 0 {
 		return common.ErrParameter
 	}

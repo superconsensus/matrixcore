@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"math/big"
 	"path/filepath"
 	"runtime"
@@ -69,6 +70,7 @@ const (
 	GasPriceKey                = "GasPrice"
 	GroupChainContractKey      = "GroupChainContract"
 	TransferFeeAmountKey       = "TransferFeeAmount"
+	AwardKey = "Award"
 )
 
 // Ledger define data structure of Ledger
@@ -724,6 +726,24 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 	cbNum := 0
 	oldBlockCache := map[string]*pb.InternalBlock{}
 	for _, tx := range realTransactions {
+		if tx.VoteCoinbase && !bytes.Equal(tx.Desc, []byte("1")){ // 兼容旧版分红奖励
+			// 池子部分更新，每票奖励是在矿工出块时修改的，在这里将修改结果写入
+			// 同时因为矿工打包块的时候已经将【本交易置顶】，所以可以保证更新了每票奖励之后
+			//（分红 = 每票奖励 * 票数 - 债务）间接更新了投票者的分红
+			// 之后如果有用户主动发起的提现数据交易更新才不会被覆盖
+			bonusData := &protos.AllBonusData{}
+			pe := proto.Unmarshal(tx.Desc, bonusData)
+			if pe != nil {
+				l.xlog.Warn("V__解析分红奖励数据出错", pe)
+			}/*else {
+				fmt.Println("分红池", bonusData.GetBonusPools())
+				fmt.Println("提现队列", bonusData.GetDiscountQueue())
+			}*/
+			putE := l.ConfirmedTable.Put([]byte("all_bonus_data"), tx.Desc)
+			if putE != nil {
+				l.xlog.Warn("V__更新分红数据奖励数据失败", putE)
+			}
+		}
 		//在这儿解析交易存表,调用新版的接口TxOutputs不会超过4
 		//理论上这儿坐过校验判断后，不会报错，目前还是写好报错码，以便调试
 		if len(tx.TxInputs) > 0 && len(tx.TxOutputs) < 4 && len(tx.ContractRequests) > 0 {
@@ -741,9 +761,11 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 				//这里有buy和sell
 				switch tmpReq.MethodName {
 				case "Buy":
-					l.WriteFreezeTable(batchWrite, tmpReq.Args["amount"], string(tx.TxInputs[0].FromAddr), tx)
+					l.WriteFreezeTable(batchWrite, tmpReq.Args["amount"], tx.Initiator, tx)
 				case "Sell":
-					l.WriteThawTable(batchWrite, tmpReq.Args["amount"], string(tx.TxInputs[0].FromAddr), tx)
+					l.WriteThawTable(batchWrite, tmpReq.Args["amount"], tx.Initiator, tx)
+				case "BonusObtain":
+					l.Discount(batchWrite, tmpReq.Args, tx.Initiator, tx)
 				default:
 					l.xlog.Warn("D__解析交易存表时方法异常，异常方法名:", "tmpReq.MethodName", tmpReq.MethodName)
 				}
@@ -751,13 +773,13 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 			if tmpReq.ModuleName == "xkernel" && (tmpReq.ContractName == "$tdpos" || tmpReq.ContractName == "$xpos") {
 				switch tmpReq.MethodName {
 				case "nominateCandidate":
-					l.WriteCandidateTable(batchWrite, string(tx.TxInputs[0].FromAddr), tmpReq.Args)
+					l.WriteCandidateTable(batchWrite, tx.Initiator, tmpReq.Args, block.Height)
 				case "revokeNominate":
-					l.WriteReCandidateTable(batchWrite, string(tx.TxInputs[0].FromAddr), tmpReq.Args)
+					l.WriteReCandidateTable(batchWrite, tx.Initiator, tmpReq.Args)
 				case "voteCandidate":
-					l.VoteCandidateTable(batchWrite, string(tx.TxInputs[0].FromAddr), tmpReq.Args)
+					l.VoteCandidateTable(batchWrite, tx.Initiator, tmpReq.Args)
 				case "revokeVote":
-					l.RevokeVote(batchWrite, string(tx.TxInputs[0].FromAddr), tmpReq.Args)
+					l.RevokeVote(batchWrite, tx.Initiator, tmpReq.Args)
 				default:
 					l.xlog.Warn("D__解析tdpos交易存表时方法异常，异常方法名:", "tmpReq.MethodName", tmpReq.MethodName)
 				}
@@ -863,6 +885,98 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 	l.blockCache.Add(string(block.Blockid), block)
 	l.xlog.Debug("confirm block cost", "blkTimer", blkTimer.Print())
 	return confirmStatus
+}
+
+// 用户分红奖励提现
+func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator string, tx *pb.Transaction) {
+	allBonusData := &protos.AllBonusData{}
+	allBonusDataBytes, getErr := l.ConfirmedTable.Get([]byte("all_bonus_data"))
+	if getErr == nil {
+		pErr := proto.Unmarshal(allBonusDataBytes, allBonusData)
+		if pErr != nil {
+			l.xlog.Warn("V__用户提现分红奖励数据解析错误", pErr)
+			return
+		}
+
+		// 提现数量与到账高度
+		takeBonus, _ := big.NewInt(0).SetString(args["amount"], 10)
+		targetHeight, _ := big.NewInt(0).SetString(args["height"], 10)
+
+		if allBonusData.DiscountQueue == nil {
+			allBonusData.DiscountQueue = make(map[int64]*protos.BonusRewardDiscount)
+		}
+		// 用户提现map
+		discountQueue := &protos.BonusRewardDiscount{}
+		// 用户提现数据（为discountQueue的子字段）
+		userDiscount := make(map[string]string)
+		// 提现发起人
+		newestVoter := initiator
+		//fmt.Printf("%#v\n%#v\n", allBonusData.DiscountQueue, allBonusData.DiscountQueue[targetHeight.Int64()])
+		// height高度下是否已存在提现数据
+		queue, exist := allBonusData.DiscountQueue[targetHeight.Int64()]
+		if !exist {
+			//fmt.Println("height高度下没有提现数据", takeBonus.String())
+			// height高度下没有提现数据，newestVoter用户提现discount数量的分红
+			userDiscount[newestVoter] = takeBonus.String()
+		}else {
+			// height高度下已存在提现数据
+			originAmount, repeatOK := queue.UserDiscount[newestVoter]
+			if repeatOK {
+				// 有同一个用户的多次提现数据时，合并总量
+				oldAmount, _ := big.NewInt(0).SetString(originAmount, 10)
+				oldAmount.Add(oldAmount, takeBonus)
+				// userDiscount先存旧数据
+				userDiscount = allBonusData.DiscountQueue[targetHeight.Int64()].UserDiscount
+				//fmt.Println("V__height高度下同一个用户多次提现", oldAmount.String())
+				// newestVoter用户提现oldAmount数量的分红
+				userDiscount[newestVoter] = oldAmount.String()
+			}else {
+				// 不同用户提现，userDiscount先存旧数据
+				userDiscount = allBonusData.DiscountQueue[targetHeight.Int64()].UserDiscount
+				//fmt.Println("V__height高度下用户新提现", takeBonus.String())
+				// newestVoter用户提现discount数量的分红
+				userDiscount[newestVoter] = takeBonus.String()
+			}
+		}
+		discountQueue.UserDiscount = userDiscount
+		allBonusData.DiscountQueue[targetHeight.Int64()] = discountQueue
+		//fmt.Println("V__最新的提现情况", allBonusData.DiscountQueue)
+
+		// 更新债务
+		pools := allBonusData.GetBonusPools()
+		for miner, pool := range pools {
+			// 池子分红 = 票数 * 每票奖励 - 债务，提现之后债务增加
+			voter, ok := pool.Voters[initiator]
+			if ok {
+				votes, _ := big.NewInt(0).SetString(voter.Amount, 10)
+				bonusPerVote, _ := big.NewInt(0).SetString(pool.BonusPerVote, 10)
+				oldDebt, _ := big.NewInt(0).SetString(voter.Debt, 10)
+				// 该池子的剩余奖励
+				votes.Mul(votes, bonusPerVote).Sub(votes, oldDebt)
+				if takeBonus.Cmp(votes) <= 0 {
+					// 提现额小于池子奖励，债务直接增加提现数量并退出循环
+					voter.Debt = oldDebt.Add(oldDebt, takeBonus).String()
+					pools[miner].Voters[initiator] = voter
+					break
+				}else {
+					// 提现额大于单个池子奖励
+					voter.Debt = oldDebt.Add(oldDebt, votes).String()
+					takeBonus.Sub(takeBonus, votes)
+					pools[miner].Voters[initiator] = voter
+				}
+			}
+		}
+		allBonusData.BonusPools = pools
+		// 分红信息更新后需要写回
+		updateBytes, _ := proto.Marshal(allBonusData)
+		ok := l.ConfirmedTable.Put([]byte("all_bonus_data"), updateBytes)
+		if ok != nil {
+			l.xlog.Warn("V__分红数据更新失败", ok)
+		}
+	}else {
+		l.xlog.Warn("V__读取分红数据出错", getErr)
+		return
+	}
 }
 
 // TxDesc is the description to running a contract
@@ -976,6 +1090,7 @@ func (l *Ledger) WriteThawTable(batch kvdb.Batch, cliAmount string, user string,
 		NodeDetails.NodeDetail = append(NodeDetails.NodeDetail, NodeDetail)
 		NodeTable.NodeDetails[NodeDetail.Height] = NodeDetails
 	} else {
+		// 此高度已经有待sell的交易信息
 		NodeDetails.NodeDetail = NodeTable.NodeDetails[NodeDetail.Height].NodeDetail
 		NodeDetails.NodeDetail = append(NodeDetails.NodeDetail, NodeDetail)
 		NodeTable.NodeDetails[NodeDetail.Height] = NodeDetails
@@ -1309,8 +1424,35 @@ func (l *Ledger) WriteReCandidateTable(batch kvdb.Batch, user string, Args map[s
 	return nil
 }
 
+// 提案最少质押量
+func (l *Ledger) GetTokenRequired(height int64) *big.Int{
+	// base底数为1.1
+	base := decimal.NewFromFloat(1.1)
+	period := decimal.NewFromInt(height / l.GenesisBlock.config.AwardDecay.HeightGap)
+	base = base.Pow(period) // base^period
+
+	// 全网初始UTXO，预分配（predistribution，type：[]struct{}）可能有多个，因此这里用循环计算
+	preTotal := decimal.NewFromFloat(0)
+	for _, v := range l.GenesisBlock.GetConfig().Predistribution {
+		number, err := decimal.NewFromString(v.Quota)
+		if err != nil {
+			l.xlog.Warn("V__计算全网预分配UTXO总量出错", "err", err)
+			return big.NewInt(0)
+		}
+		preTotal = preTotal.Add(number)
+	}
+	// 最少质押量 = preTotal * 1.1^period次方 * 万分之一（精度10^8）
+	preTotal = preTotal.Mul(base).Div(decimal.NewFromInt(1000000000000))
+	// total小数点后四舍五入取整
+	preTotal = preTotal.Round(0)
+	// 计算后的decimal存为big.int
+	need := big.NewInt(0)
+	need.SetString(preTotal.String(), 10)
+	return need
+}
+
 //提案写表
-func (l *Ledger) WriteCandidateTable(batch kvdb.Batch, user string, Args map[string]string) error {
+func (l *Ledger) WriteCandidateTable(batch kvdb.Batch, user string, Args map[string]string, height int64) error {
 	//参数获取，被提名人
 	candidate := Args["candidate"]
 	//参数获取，抵押的代币数
@@ -1336,11 +1478,14 @@ func (l *Ledger) WriteCandidateTable(batch kvdb.Batch, user string, Args map[str
 		l.xlog.Error("提名候选人radio参数值必须在0-100之间")
 		return errors.New("提名候选人radio参数值必须在0-100之间")
 	}
-	// todo 获取全网总资产_牡蛎哒
-	//	至少满足最低标准1.5w
-	if newAmount.Int64() < 15000 {
-		l.xlog.Error("提名候选人质押治理代币数量不得低于15000", "本次提名质押量：", newAmount.Int64())
-		return errors.New("提名候选人质押治理代币数量不得低于15000")
+	// 根据当前高度计算提名最少需要质押的治理代币
+	need := l.GetTokenRequired(height)
+	if need.Int64() == 0 {
+		return errors.New("V__计算全网预分配UTXO总量出错")
+	}
+	if newAmount.Cmp(need) == -1 {
+		l.xlog.Error("V__提名候选人质押治理代币数量不得低于", need.Int64(), "本次提名质押量：", newAmount.Int64())
+		return fmt.Errorf("提名候选人质押治理代币数量不得低于%v", need.Int64())
 	}
 
 	//提名的人治理代币消耗增加
@@ -2006,4 +2151,10 @@ func (l *Ledger) QueryBlockByTxid(txid []byte) (*pb.InternalBlock, error) {
 func (l *Ledger) GetTransferFeeAmount() int64 {
 	defaultTransferFeeAmount := l.GenesisBlock.GetConfig().GetTransferFeeAmount()
 	return defaultTransferFeeAmount
+}
+
+//获取创世块中设置的出块奖励
+func (l *Ledger) GetAward() string {
+	defaultAward := l.GenesisBlock.GetConfig().GetAward()
+	return defaultAward
 }

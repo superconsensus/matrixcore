@@ -173,6 +173,10 @@ message UtxoMeta {
     protos.GasPrice gasPrice = 12;
     // 群组合约相关
     protos.InvokeRequest group_chain_contract = 13;
+    // 出块奖励
+    string award = 14;
+    // 转账手续费
+    int64 transfer_fee_amount = 15;
 }
 
 // The internal block struct

@@ -190,7 +190,7 @@ func (t *State) ImmediateVerifyAutoTx(blockHeight int64, tx *pb.Transaction, isR
 		}
 		if bytes.Compare(tx.Txid, txid) != 0 {
 			t.log.Warn("ImmediateVerifyTx: txid not match", "tx.Txid", tx.Txid, "txid", txid)
-			return false, fmt.Errorf("Txid verify failed")
+			return false, fmt.Errorf("交易id验证失败")
 		}
 
 		// verify RWSet(compare RWSet)

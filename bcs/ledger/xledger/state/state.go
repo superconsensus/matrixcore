@@ -185,6 +185,8 @@ func (t *State) SetAclMG(aclMgr aclBase.AclManager) {
 
 func (t *State) SetContractMG(contractMgr contract.Manager) {
 	t.sctx.SetContractMG(contractMgr)
+	// 创链的时候，先创建state实例再创建合约实例，因此后创建的合约实例化之后要绑定到state中，在这个过程中顺便注册updateTxFee/Award方法
+	t.sctx.ContractMgr.GetKernRegistry().RegisterKernMethod("$meta", "updateConfig", t.meta.RunUpdateConfig)
 }
 
 func (t *State) SetGovernTokenMG(governTokenMgr governToken.GovManager) {
@@ -219,6 +221,11 @@ func (t *State) QueryUtxoRecord(accountName string, displayCount int64) (*pb.Utx
 
 func (t *State) SelectUtxosBySize(fromAddr string, needLock, excludeUnconfirmed bool) ([]*protos.TxInput, [][]byte, *big.Int, error) {
 	return t.utxo.SelectUtxosBySize(fromAddr, needLock, excludeUnconfirmed)
+}
+
+// 随机逼近法选择utxo
+func (t *State) StochasticApproximationSelectUtxos(fromAddr string, totalNeed *big.Int, needLock, excludeUnconfirmed bool) ([]*protos.TxInput, [][]byte, *big.Int, error) {
+	return t.utxo.StochasticApproximationSelectUtxos(fromAddr, totalNeed, needLock, excludeUnconfirmed)
 }
 
 func (t *State) QueryContractStatData() (*protos.ContractStatData, error) {
@@ -360,7 +367,7 @@ func (t *State) VerifyTx(tx *pb.Transaction) (bool, error) {
 	}
 
 	if !t.VerifyTxFee(tx) {
-		return false, errors.New("you must input fee")
+		return false, errors.New("未输入手续费或手续费不足")
 	}
 	return isValid, err
 }
@@ -383,7 +390,8 @@ func (t *State) VerifyTxFee(tx *pb.Transaction) bool {
 		case FeePlaceholder:
 			//手续费价格匹配
 			fee := big.NewInt(0).SetBytes(output.Amount)
-			if fee.Int64() >= 1000000 {
+			// 由固定 1000000 改为 meta.txFeeAmount；该txFeeAmount可以通过提案修改，从而动态控制转账手续费
+			if fee.Int64() >= t.GetMeta().GetTransferFeeAmount() {
 				return true
 			}
 		//空的收款人
@@ -802,6 +810,8 @@ func (t *State) GetMeta() *pb.UtxoMeta {
 	meta.IrreversibleSlideWindow = t.meta.GetIrreversibleSlideWindow()
 	meta.GasPrice = t.meta.GetGasPrice()
 	meta.GroupChainContract = t.meta.GetGroupChainContract()
+	meta.TransferFeeAmount = t.meta.GetTransferFeeAmount() // 获取转账手续费
+	//meta.Award = t.meta.GetAward() // 获取出块奖励
 	return meta
 }
 
@@ -834,16 +844,16 @@ func (t *State) doTxSync(tx *pb.Transaction) error {
 	batch := t.ldb.NewBatch()
 	cacheFiller := &utxo.CacheFiller{}
 	beginTime := time.Now()
+	//在这儿检验购买治理代币交易
+	error := t.checkTxState(tx)
+	if error != nil {
+		return error
+	}
 	doErr := t.doTxInternal(tx, batch, cacheFiller)
 	metrics.CallMethodHistogram.WithLabelValues(t.sctx.BCName, "doTxInternal").Observe(time.Since(beginTime).Seconds())
 	if doErr != nil {
 		t.log.Info("doTxInternal failed, when DoTx", "doErr", doErr)
 		return doErr
-	}
-	//在这儿检验购买治理代币交易
-	error := t.checkTxState(tx)
-	if error != nil {
-		return error
 	}
 
 	batch.Put(append([]byte(pb.UnconfirmedTablePrefix), tx.Txid...), pbTxBuf)
@@ -898,11 +908,11 @@ func (t *State) checkTxState(tx *pb.Transaction) error {
 			case "nominateCandidate":
 				return t.checkNominateCandidate(tmpReq.Args)
 			case "revokeNominate" :
-				return t.checkRevokeNominate(string(tx.TxInputs[0].FromAddr),tmpReq.Args)
+				return t.checkRevokeNominate(tx.Initiator, tmpReq.Args)
 			case "vote":
 				return t.checkVote(tmpReq.Args)
 			case "revokeVote":
-				return t.checkRevokeVote(string(tx.TxInputs[0].FromAddr), tmpReq.Args)
+				return t.checkRevokeVote(tx.Initiator, tmpReq.Args)
 			}
 		}
 		//联盟链创建手续费校验
@@ -1027,15 +1037,27 @@ func (t * State) checkRevokeNominate(user string,Args map[string]string) error {
 
 func (t *State) checkNominateCandidate(Args map[string]string ) error {
 	//获取系统总资产
-	TotalMoney :=t.GetMeta().UtxoTotal
-	TotalAmount := big.NewInt(0)
-	_ , error := TotalAmount.SetString(TotalMoney,10)
-	fmt.Printf("D__当前全网资产: %d",TotalAmount.Int64())
-	if error == false {
-		return  errors.New("D__异常错误，获取系统总资产错误\n")
+	//TotalMoney :=t.GetMeta().UtxoTotal
+	//TotalAmount := big.NewInt(0)
+	//_ , error := TotalAmount.SetString(TotalMoney,10)
+	//fmt.Printf("D__当前全网资产: %d",TotalAmount.Int64())
+	//if error == false {
+	//	return  errors.New("D__异常错误，获取系统总资产错误\n")
+	//}
+	////万分之一 + 除精度
+	//TotalAmount.Div(TotalAmount,big.NewInt(1000000000000))
+
+	// 获得最新块（的高度）用于计算提名需要质押的治理代币量
+	blk, err := t.sctx.Ledger.QueryBlock(t.GetLatestBlockid())
+	if err != nil {
+		t.log.Error("V__state检查提名时查询最新块错误", "err", err)
+		return err
 	}
-	//万分之一 + 除精度
-	TotalAmount.Div(TotalAmount,big.NewInt(1000000000000))
+	TotalAmount := t.sctx.Ledger.GetTokenRequired(blk.GetHeight())
+	if TotalAmount.Int64() == 0 {
+		return errors.New("V__计算全网预分配UTXO总量出错")
+	}
+
 	//参数获取，抵押的代币数
 	amount := Args["amount"]
 	//分红比
@@ -1045,7 +1067,7 @@ func (t *State) checkNominateCandidate(Args map[string]string ) error {
 		return  errors.New("D__提名候选人amount和ratio参数不能为空\n")
 	}
 	newAmount := big.NewInt(0)
-	_ , error = newAmount.SetString(amount,10)
+	_ , error := newAmount.SetString(amount,10)
 	if error == false {
 		return  errors.New("D__提名候选人amount参数内容有误\n")
 	}
@@ -1156,6 +1178,31 @@ func (t *State)checkBuy(tx *pb.Transaction ,args map[string]string) error {
 
 	return nil
 }
+
+// 分红奖励提现，同ReverseTx，只是奖励不再*10^8
+func (t *State) DiscountTx(FromAddr string, batch kvdb.Batch,Amount string) (*pb.Transaction,error) {
+	// Users predefined user
+	//重新构成交易列表
+	utxoTx := &pb.Transaction{Version: 1}
+	address := FromAddr
+	amount := big.NewInt(0)
+	amount.SetString(Amount, 10)
+	if amount.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("V__分红提现解冻金额少于0\n")
+	}
+	//amount.Mul(amount, big.NewInt(100000000))
+	txOutput := &protos.TxOutput{}
+	txOutput.ToAddr = []byte(address)
+	txOutput.Amount = amount.Bytes()
+	utxoTx.TxOutputs = append(utxoTx.TxOutputs, txOutput)
+	utxoTx.Desc = []byte("thaw")
+	utxoTx.ThawCoinbase = true
+	utxoTx.Timestamp = time.Now().UnixNano()
+	utxoTx.Txid, _ = txhash.MakeTransactionID(utxoTx)
+	fmt.Printf("V__分红提现奖励到账，交易id %s\n", hex.EncodeToString(utxoTx.Txid))
+	return utxoTx, nil
+}
+
 //(目前是凭空产生的，这笔产生的资源不加入系统的总资源)
 func (t *State) ReverseTx(FromAddr string, batch kvdb.Batch,Amount string) (*pb.Transaction,error) {
 	// Users predefined user
@@ -1199,6 +1246,8 @@ func (t *State) doTxInternal(tx *pb.Transaction, batch kvdb.Batch, cacheFiller *
 		txid := txInput.RefTxid
 		offset := txInput.RefOffset
 		utxoKey := utxo.GenUtxoKeyWithPrefix(addr, txid, offset)
+		// key: UAddr_txid_offset，删除input
+		//fmt.Println("doTxInternal-->", utxoKey)
 		batch.Delete([]byte(utxoKey)) // 删除用掉的utxo
 		t.utxo.UtxoCache.Remove(string(addr), utxoKey)
 		t.utxo.SubBalance(addr, big.NewInt(0).SetBytes(txInput.Amount))
@@ -1221,6 +1270,10 @@ func (t *State) doTxInternal(tx *pb.Transaction, batch kvdb.Batch, cacheFiller *
 		if uErr != nil {
 			return uErr
 		}
+		//if !tx.Coinbase {
+			// {"Amount":10,"FrozenHeight":0}，写入output
+			//fmt.Println("batch put", string(uItemBinary))
+		//}
 		batch.Put([]byte(utxoKey), uItemBinary) // 插入本交易产生的utxo
 		if cacheFiller != nil {
 			cacheFiller.Add(func() {

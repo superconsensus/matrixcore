@@ -229,10 +229,16 @@ func (gb *GenesisBlock) CalcAward(blockHeight int64) *big.Int {
 	}
 	period := blockHeight / gb.config.AwardDecay.HeightGap
 	if awardRemember, ok := gb.awardCache.Get(period); ok {
+		/*if award.Cmp(awardRemember.(*big.Int)) != 0 {
+			// 提案直接修改了award出块奖励
+			gb.awardCache.Add(period, award)
+			return award
+		}*/
 		return awardRemember.(*big.Int) //加个记忆，避免每次都重新算
 	}
 	var realAward = float64(award.Int64())
 	for i := int64(0); i < period; i++ { //等比衰减
+		// 创世配置中ratio设置为1.1递增，结合heightGap年出块量实现每年增发10%，故取消提案的award修改
 		realAward = realAward * gb.config.AwardDecay.Ratio
 	}
 	N := int64(math.Round(realAward)) //四舍五入
@@ -255,4 +261,9 @@ func (rc *RootConfig) GetGasPrice() *protos.GasPrice {
 //添加获取手续费的函数
 func (rc *RootConfig) GetTransferFeeAmount() int64 {
 	return rc.TransferFeeAmount
+}
+
+//添加获取出块奖励的函数
+func (rc *RootConfig) GetAward() string {
+	return rc.Award
 }

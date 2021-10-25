@@ -3,11 +3,10 @@ package govern_token
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
-
 	xledger "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
 	"github.com/superconsensus-chain/xupercore/kernel/contract"
 	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
+	"math/big"
 )
 
 type KernMethod struct {
@@ -89,6 +88,7 @@ func (t *KernMethod) InitGovernTokens(ctx contract.KContext) (*contract.Response
 }
 
 func (t *KernMethod) AddTokens(ctx contract.KContext) (*contract.Response, error) {
+	//fmt.Println("xfee", ctx.ResourceLimit().XFee, t.NewGovResourceAmount/1000)
 	if ctx.ResourceLimit().XFee < t.NewGovResourceAmount/1000 {
 		return nil, fmt.Errorf("gas not enough, expect no less than %d", t.NewGovResourceAmount/1000)
 	}
@@ -209,7 +209,8 @@ func (t *KernMethod) SubTokens(ctx contract.KContext) (*contract.Response, error
 			tmpAmount := big.NewInt(0)
 			tmpAmount.Sub(senderBalance.TotalBalance, v)
 			if tmpAmount.Cmp(amount) < 0 {
-				return nil, fmt.Errorf("transfer gov tokens failed, sender's insufficient balance")
+				//return nil, fmt.Errorf("transfer gov tokens failed, sender's insufficient balance")
+				return nil, fmt.Errorf("解冻失败，未冻结的可用治理代币少于本次申请解冻的数量")
 			}
 		}
 		balance.TotalBalance.Sub(balance.TotalBalance,amount)
@@ -559,6 +560,7 @@ func (t *KernMethod) TotalSupply(ctx contract.KContext) (*contract.Response, err
 }
 
 func (t *KernMethod) balanceOf(ctx contract.KContext, account string) (*utils.GovernTokenBalance, error) {
+	// 实际查询还是在ctx的bucket中
 	accountKey := utils.MakeAccountBalanceKey(account)
 	accountBalanceBuf, err := ctx.Get(utils.GetGovernTokenBucket(), []byte(accountKey))
 	if err != nil {

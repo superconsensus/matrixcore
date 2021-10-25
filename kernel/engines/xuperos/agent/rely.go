@@ -182,6 +182,7 @@ func (t *ChainRelyAgentImpl) CreateGovernToken() (governToken.GovManager, error)
 		return nil, fmt.Errorf("create govern_token ctx failed.err:%v", err)
 	}
 
+	governTokenCtx.RealLedger = legAgent.chainCtx.Ledger
 	governTokenObj, err := governToken.NewGovManager(governTokenCtx)
 	if err != nil {
 		return nil, fmt.Errorf("create govern_token instance failed.err:%v", err)

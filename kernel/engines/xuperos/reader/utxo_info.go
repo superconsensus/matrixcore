@@ -23,6 +23,8 @@ type UtxoReader interface {
 	SelectUTXO(account string, need *big.Int, isLock, isExclude bool) (*lpb.UtxoOutput, error)
 	// 按最大交易大小选择utxo
 	SelectUTXOBySize(account string, isLock, isExclude bool) (*lpb.UtxoOutput, error)
+	// 随机逼近法选择utxo
+	StochasticApproximationSelectUtxos(account string, need *big.Int, isLock, isExclude bool) (*lpb.UtxoOutput, error)
 }
 
 type utxoReader struct {
@@ -124,6 +126,33 @@ func (t *utxoReader) SelectUTXOBySize(account string, isLock, isExclude bool) (*
 		utxo.ToAddr = v.FromAddr
 		utxoList = append(utxoList, utxo)
 		t.log.Trace("Select utxo list", "refTxid", utils.F(v.RefTxid), "refOffset", v.RefOffset, "amount", new(big.Int).SetBytes(v.Amount).String())
+	}
+
+	out := &lpb.UtxoOutput{
+		UtxoList:      utxoList,
+		TotalSelected: totalSelected.String(),
+	}
+	return out, nil
+}
+
+// StochasticApproximationSelectUtxos 随机逼近法
+func (t *utxoReader) StochasticApproximationSelectUtxos(account string,
+	need *big.Int, isLock, isExclude bool) (*lpb.UtxoOutput, error) {
+	utxos, _, totalSelected, err := t.chainCtx.State.StochasticApproximationSelectUtxos(account, need, isLock, isExclude)
+	if err != nil {
+		t.log.Warn("V__failed to select utxo", "err", err)
+		return nil, common.CastError(err)
+	}
+
+	utxoList := make([]*lpb.Utxo, 0, len(utxos))
+	for _, v := range utxos {
+		utxo := &lpb.Utxo{}
+		utxo.RefTxid = v.RefTxid
+		utxo.Amount = v.Amount
+		utxo.RefOffset = v.RefOffset
+		utxo.ToAddr = v.FromAddr
+		utxoList = append(utxoList, utxo)
+		t.log.Trace("V__Select utxo list", "refTxid", utils.F(v.RefTxid), "refOffset", v.RefOffset, "amount", new(big.Int).SetBytes(v.Amount).String())
 	}
 
 	out := &lpb.UtxoOutput{

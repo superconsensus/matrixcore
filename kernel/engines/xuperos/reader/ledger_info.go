@@ -2,6 +2,7 @@ package reader
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
@@ -45,6 +46,13 @@ type ledgerReader struct {
 	baseCtx  xctx.XContext
 	log      logs.Logger
 }
+
+var (
+	// leveldb: not found
+	DBNotFound = errors.New("没有该用户的数据记录")
+	// 其它错误
+	UnKnowErr = errors.New("未知错误")
+)
 
 func NewLedgerReader(chainCtx *common.ChainCtx, baseCtx xctx.XContext) LedgerReader {
 	if chainCtx == nil || baseCtx == nil {
@@ -161,12 +169,12 @@ func (t *ledgerReader)Test(address string)(*protos.CandidateRatio,error){
 	out := &protos.CandidateRatio{}
 	keytable := "ballot_" + address
 	PbTxBuf, kvErr := t.chainCtx.Ledger.ConfirmedTable.Get([]byte(keytable))
-	if(kvErr != nil) {
-		return nil, kvErr
+	if kvErr != nil {
+		return nil, DBNotFound
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, out)
 	if parserErr != nil  {
-		return nil,parserErr
+		return nil, UnKnowErr
 	}
 
 	return out,nil
@@ -180,7 +188,7 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 	VoteDetails := []*protos.VoteDetailsStatus{}
 	_,error := t.ReadUserBallot(address,CandidateRatio)
 	if error != nil {
-		return nil,error
+		return nil, DBNotFound
 	}
 	out.TotalAmount = CandidateRatio.TatalVote
 	out.UsedAmount = CandidateRatio.Used
@@ -188,12 +196,12 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 	FrozenAssetsTable := &protos.FrozenAssetsTable{}
 	keytable :=  "amount_" + address
 	PbTxBuf, kvErr := t.chainCtx.Ledger.ConfirmedTable.Get([]byte(keytable))
-	if(kvErr != nil) {
-		return nil,kvErr
+	if kvErr != nil {
+		return nil, UnKnowErr
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, FrozenAssetsTable)
 	if parserErr != nil  {
-		return nil,kvErr
+		return nil, UnKnowErr
 	}
 	out.FrozenAssetsTable = FrozenAssetsTable
 
@@ -215,7 +223,7 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 		userBallot := &protos.CandidateRatio{}
 		_,err := t.ReadUserBallot(key,userBallot)
 		if err != nil {
-			return out,nil
+			return out, DBNotFound
 		}
 		VoteDetailsStatus.Ratio = int32(userBallot.Ratio)
 		VoteDetailsStatus.Toaddr = key
@@ -277,6 +285,8 @@ func (t *ledgerReader)GetSystemStatusExplorer()(*protos.BCStatusExplorer,error){
 	}
 	free , _ := new(big.Int).SetString(out.FreeMonry, 10)
 	total , _ := new(big.Int).SetString(out.TotalMoney,10)
+	// 精度转换
+	total.Div(total, big.NewInt(100000000))
 	free.Mul(free,big.NewInt(10000))
 	ratio := free.Div(free,total).Int64()
 	out.Percentage = fmt.Sprintf("%.2f", float64(ratio)/100)

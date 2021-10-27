@@ -146,10 +146,20 @@ func newLedger(lctx *LedgerCtx, createIfMissing bool, genesisCfg []byte) (*Ledge
 	ledger.heightTable = kvdb.NewTable(baseDB, pb.BlockHeightPrefix)
 	ledger.xlog = lctx.XLog
 	ledger.meta = &pb.LedgerMeta{}
-	ledger.blockCache = cache.NewLRUCache(BlockCacheSize)
-	ledger.blkHeaderCache = cache.NewLRUCache(BlockCacheSize)
+
+	blockCache := BlockCacheSize
+	if lctx.LedgerCfg.BlockCacheSize != 0 {
+		blockCache = lctx.LedgerCfg.BlockCacheSize
+	}
+	ledger.blockCache = cache.NewLRUCache(blockCache)
+	ledger.blkHeaderCache = cache.NewLRUCache(blockCache)
+
+	txCache := TxCacheSize
+	if lctx.LedgerCfg.TxCacheSize != 0 {
+		blockCache = lctx.LedgerCfg.TxCacheSize
+	}
+	ledger.txCache = cache.NewLRUCache(txCache)
 	ledger.ConfirmBatch = baseDB.NewBatch()
-	ledger.txCache = cache.NewLRUCache(TxCacheSize)
 	metaBuf, metaErr := ledger.metaTable.Get([]byte(""))
 	emptyLedger := false
 	if metaErr != nil && def.NormalizedKVError(metaErr) == def.ErrKVNotFound && createIfMissing {
@@ -1862,8 +1872,8 @@ func (l *Ledger) QueryTransaction(txid []byte) (*pb.Transaction, error) {
 	if ok {
 		return itx.(*pb.Transaction), nil
 	}
-	table := l.ConfirmedTable
 
+	table := l.ConfirmedTable
 	pbTxBuf, kvErr := table.Get(txid)
 	if kvErr != nil {
 		if def.NormalizedKVError(kvErr) == def.ErrKVNotFound {

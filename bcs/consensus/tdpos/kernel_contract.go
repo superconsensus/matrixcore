@@ -224,7 +224,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	//fmt.Println("rset", string(rwSet.RSet[2].PureData.GetKey()), string(rwSet.RSet[2].PureData.GetValue()))
 	//&& !bytes.Equal(rwSet.RSet[0].PureData.GetValue(), rwSet.WSet[0].GetValue())
 	// 兼容旧版本已经上链的交易，用高度过滤本判断，如果链从零开始运行则可忽略高度条件
-	if ( rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil ) /*&& height > 1920000*/{
+	if ( rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil ) && height > 1920000{
 		// Set[0] --> nominate table
 		// Set[1] --> revoke table add info
 		// Set[2] --> 被撤销提名的用户治理代币balance

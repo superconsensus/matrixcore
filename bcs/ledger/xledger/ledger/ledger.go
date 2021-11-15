@@ -726,24 +726,24 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 	cbNum := 0
 	oldBlockCache := map[string]*pb.InternalBlock{}
 	for _, tx := range realTransactions {
-		if tx.VoteCoinbase && !bytes.Equal(tx.Desc, []byte("1")){ // 兼容旧版分红奖励
-			// 池子部分更新，每票奖励是在矿工出块时修改的，在这里将修改结果写入
-			// 同时因为矿工打包块的时候已经将【本交易置顶】，所以可以保证更新了每票奖励之后
-			//（分红 = 每票奖励 * 票数 - 债务）间接更新了投票者的分红
-			// 之后如果有用户主动发起的提现数据交易更新才不会被覆盖
-			bonusData := &protos.AllBonusData{}
-			pe := proto.Unmarshal(tx.Desc, bonusData)
-			if pe != nil {
-				l.xlog.Warn("V__解析分红奖励数据出错", pe)
-			}/*else {
-				fmt.Println("分红池", bonusData.GetBonusPools())
-				fmt.Println("提现队列", bonusData.GetDiscountQueue())
-			}*/
-			putE := l.ConfirmedTable.Put([]byte("all_bonus_data"), tx.Desc)
-			if putE != nil {
-				l.xlog.Warn("V__更新分红数据奖励数据失败", putE)
-			}
-		}
+		//if tx.VoteCoinbase && !bytes.Equal(tx.Desc, []byte("1")){ // 兼容旧版分红奖励
+		//	// 池子部分更新，每票奖励是在矿工出块时修改的，在这里将修改结果写入
+		//	// 同时因为矿工打包块的时候已经将【本交易置顶】，所以可以保证更新了每票奖励之后
+		//	//（分红 = 每票奖励 * 票数 - 债务）间接更新了投票者的分红
+		//	// 之后如果有用户主动发起的提现数据交易更新才不会被覆盖
+		//	bonusData := &protos.AllBonusData{}
+		//	pe := proto.Unmarshal(tx.Desc, bonusData)
+		//	if pe != nil {
+		//		l.xlog.Warn("V__解析分红奖励数据出错", pe)
+		//	}/*else {
+		//		fmt.Println("分红池", bonusData.GetBonusPools())
+		//		fmt.Println("提现队列", bonusData.GetDiscountQueue())
+		//	}*/
+		//	putE := l.ConfirmedTable.Put([]byte("all_bonus_data"), tx.Desc)
+		//	if putE != nil {
+		//		l.xlog.Warn("V__更新分红数据奖励数据失败", putE)
+		//	}
+		//}
 		//在这儿解析交易存表,调用新版的接口TxOutputs不会超过4
 		//理论上这儿坐过校验判断后，不会报错，目前还是写好报错码，以便调试
 		if len(tx.TxInputs) > 0 && len(tx.TxOutputs) < 4 && len(tx.ContractRequests) > 0 {

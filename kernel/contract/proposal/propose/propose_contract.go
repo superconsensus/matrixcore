@@ -13,11 +13,13 @@ import (
 
 type KernMethod struct {
 	BcName string
+	Percent int64 // 全网提案最小赞成比例，计算票数大于等于此值时提案通过；可通过提案修改
 }
 
 func NewKernContractMethod(bcName string) *KernMethod {
 	t := &KernMethod{
 		BcName: bcName,
+		Percent: 51, // 默认值51%
 	}
 	return t
 }
@@ -32,6 +34,9 @@ func (t *KernMethod) Propose(ctx contract.KContext) (*contract.Response, error) 
 
 	// 解析提案
 	args := ctx.Args()
+	// 参照consensus invoke从xchain命令端传
+	//fmt.Println("ctx.args[height]", string(args["height"]))
+	height := string(args["height"])
 	proposalBuf := args["proposal"]
 
 	// 增加提案投票统计的定时任务
@@ -41,7 +46,7 @@ func (t *KernMethod) Propose(ctx contract.KContext) (*contract.Response, error) 
 	}
 
 	// 校验参数
-	err = checkProposalArgs(proposal)
+	err = t.checkProposalArgs(proposal, height)
 	if err != nil {
 		return nil, err
 	}
@@ -319,8 +324,12 @@ func (t *KernMethod) CheckVoteResult(ctx contract.KContext) (*contract.Response,
 		}, nil
 	}
 
+	//govTArg := make(map[string][]byte)
+	//govTArg["stopHeight"] = []byte(proposal.Args["stop_vote_height"].(string))
+
 	// 获取治理代币总额，以及投票阈值
 	totalSupplyRes, err := ctx.Call("xkernel", utils.GovernTokenKernelContract, "TotalSupply", nil)
+	//totalSupplyRes, err := ctx.Call("xkernel", utils.GovernTokenKernelContract, "AllTokens", nil)
 	if err != nil {
 		return nil, fmt.Errorf("CheckVoteResult failed, query govern token totalsupply error")
 	}
@@ -541,12 +550,51 @@ func (t *KernMethod) unParse(proposal *utils.Proposal) ([]byte, error) {
 	return proposalBuf, nil
 }
 
-func checkProposalArgs(proposal *utils.Proposal) error {
-	if proposal.Args["min_vote_percent"] == "" || proposal.Args["stop_vote_height"] == "" {
-		return fmt.Errorf("no min_vote_percent or stop_vote_height found")
+// 修改全网赞成比例
+func (t *KernMethod) SetPercent(ctx contract.KContext) (*contract.Response, error) {
+	// 参数校验
+	if _, ok := ctx.Args()["height"]; !ok {
+		return nil, fmt.Errorf("V__提案缺失参数生效高度height\n")
+	}
+	args := make(map[string]interface{})
+	jErr := json.Unmarshal(ctx.Args()["args"], &args)
+	if jErr != nil {
+		return nil, jErr
+	}
+	v, ok := args["percent"]
+	if !ok {
+		// 没有log可以打印。。
+		fmt.Println("V__提案缺失参数新赞成比percent")
+		return nil, fmt.Errorf("V__提案缺失参数新赞成比percent\n")
+	}
+	newPercent, ok := big.NewInt(0).SetString(v.(string), 10)
+	if !ok {
+		fmt.Println("V__提案参数percent格式错误")
+		return nil, fmt.Errorf("V__提案参数percent格式错误\n")
+	}
+	if newPercent.Cmp(big.NewInt(0)) <= 0 {
+		fmt.Println("V__新赞成比低于0")
+		return nil, fmt.Errorf("V__新赞成比不能低于0\n")
 	}
 
-	err := checkVoteThread(proposal.Args["min_vote_percent"].(string))
+	// 修改赞成比
+	t.Percent = newPercent.Int64()
+
+	return &contract.Response{
+		Status:  utils.StatusOK,
+		Message: "success",
+		Body:    []byte("set percent ok"),
+	}, nil
+}
+
+func (t KernMethod) checkProposalArgs(proposal *utils.Proposal, height string) error {
+	if proposal.Args["min_vote_percent"] == "" || proposal.Args["stop_vote_height"] == "" || proposal.Args["min_vote_percent"] == nil || proposal.Args["stop_vote_height"] == nil {
+		return fmt.Errorf("V__缺失参数最小赞成比或截止投票高度")
+	}
+	//fmt.Println("args", proposal.Args, "trigger", *proposal.Trigger)
+	//fmt.Println("proposal.args.percent", proposal.Args["min_vote_percent"])
+
+	err := t.checkVoteThread(proposal.Args["min_vote_percent"].(string))
 	if err != nil {
 		return err
 	}
@@ -557,27 +605,32 @@ func checkProposalArgs(proposal *utils.Proposal) error {
 	}
 
 	// 判断 voteStopHeight 大于当前高度
-	// todo
+	curHeight, _ := big.NewInt(0).SetString(height, 10)
+	if curHeight.Cmp(voteStopHeight) >= 0 {
+		return fmt.Errorf("V__当前网络高度已经超过提案截止投票高度")
+	}
 
 	// 判断 trigger.Height 大于 voteStopHeight
 	if proposal.Trigger.Height != 0 {
 		triggerHeight := big.NewInt(proposal.Trigger.Height)
 		if triggerHeight.Cmp(voteStopHeight) != 1 {
-			return fmt.Errorf("trigger_height must be bigger than stop_vote_height")
+			return fmt.Errorf("V__生效高度必须大于截止投票高度")
 		}
+	}else {
+		return fmt.Errorf("V__提案生效高度height缺失或为0")
 	}
 
 	return nil
 }
 
-func checkVoteThread(voteThreadStr string) error {
+func (t KernMethod) checkVoteThread(voteThreadStr string) error {
 	voteThread := big.NewInt(0)
 	_, ok := voteThread.SetString(voteThreadStr, 10)
 	if !ok {
 		return fmt.Errorf("min_vote_percent parse, %s", voteThreadStr)
 	}
-	if voteThread.Cmp(big.NewInt(100)) == 1 || voteThread.Cmp(big.NewInt(51)) == -1 {
-		return fmt.Errorf("min_vote_percent err, %s", voteThread.String())
+	if voteThread.Cmp(big.NewInt(100)) == 1 || voteThread.Cmp(big.NewInt(t.Percent)) == -1 {
+		return fmt.Errorf("V__最小赞成比错误：%s, 需要%d~100", voteThread.String(), t.Percent)
 	}
 
 	return nil

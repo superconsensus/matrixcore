@@ -22,6 +22,8 @@ type ValidatorsInfo struct {
 	Miner        string   `json:"miner"`
 	Curterm      int64    `json:"curterm"`
 	ContractInfo string   `json:"contract"`
+	BlockNum int64
+	Period int64
 }
 
 type LedgerReader interface {
@@ -322,7 +324,7 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 	if jsErr != nil {
 		return nil, jsErr
 	}
-	//fmt.Printf("D__打印ValidatorsInfo： %s \n",ValidatorsInfo)
+	//fmt.Printf("D__打印ValidatorsInfo： %v \n",ValidatorsInfo)
 	//先读取当前一轮验证人的信息
 	//fmt.Println("共识中的所有验证人", ValidatorsInfo.Validators)
 	for _ , data := range ValidatorsInfo.Validators {
@@ -456,7 +458,10 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 	left:
 	index := out.Len - int64(cycle)
 	// 以每个矿工20个块计算（3s*20=60）
-	out.TimeLeft = index*60 - curBlockNum*3
+	//out.TimeLeft = index*60 - curBlockNum*3
+	// 共识获取出块间隔、出块数量，出块间隔单位：毫秒
+	//fmt.Println("出块数量", ValidatorsInfo.BlockNum, "出块间隔", ValidatorsInfo.Period)
+	out.TimeLeft = index*ValidatorsInfo.Period*ValidatorsInfo.BlockNum/1000 - curBlockNum*ValidatorsInfo.Period/1000
 	if out.TimeLeft < 0 {
 		out.TimeLeft = 0
 	}

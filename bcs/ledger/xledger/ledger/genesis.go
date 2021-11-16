@@ -56,6 +56,7 @@ type RootConfig struct {
 	// GroupChainContract
 	GroupChainContract InvokeRequest `json:"group_chain_contract"`
 	TransferFeeAmount        int64 `json:"transfer_fee_amount"` //转账手续费
+	NominatePercent	int64 `json:"nominate_percent"` // tdpos共识提名候选人时需要质押全网代币总量的最小比例
 }
 
 // GasPrice define gas rate for utxo
@@ -266,4 +267,8 @@ func (rc *RootConfig) GetTransferFeeAmount() int64 {
 //添加获取出块奖励的函数
 func (rc *RootConfig) GetAward() string {
 	return rc.Award
+}
+
+func (rc *RootConfig) GetNominatePercent() int64 {
+	return rc.NominatePercent
 }

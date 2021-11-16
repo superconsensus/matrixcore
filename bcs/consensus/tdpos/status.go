@@ -10,6 +10,8 @@ type ValidatorsInfo struct {
 	Miner        string   `json:"miner"`
 	Curterm      int64    `json:"curterm"`
 	ContractInfo string   `json:"contract"`
+	BlockNum int64
+	Period int64
 }
 
 // tdposStatus 实现了ConsensusStatus接口
@@ -56,6 +58,8 @@ func (t *TdposStatus) GetCurrentValidatorsInfo() []byte {
 		Curterm:      t.election.curTerm,
 		Miner:        t.election.miner,
 		ContractInfo: t.getTdposInfos(),
+		BlockNum: t.election.blockNum,
+		Period: t.election.period,
 	}
 	b, _ := json.Marshal(&v)
 	return b

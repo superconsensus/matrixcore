@@ -153,10 +153,12 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 		return nil, jErr
 	}
 	// 提案文件至少需要包含下面的一个参数
+	//fmt.Println("提案参数", args)
+	_, okk := args["nominatePercent"]
 	_, ok1 := args["txFee"]
 	//_, ok2 := args["award"]
 	_, ok3 := args["noFee"]
-	if !(ok3 || ok1 /*|| ok2*/) {
+	if !(ok3 || ok1 /*|| ok2*/ || okk) {
 		t.log.Error("V__meta提案缺失参数，txFee、noFee两个至少需要一个")
 		return nil, errors.New("meta提案缺失参数，txFee、noFee两个至少需要一个")
 	}
@@ -167,6 +169,7 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 		return nil, errors.New("V__meta提案设置需要手续费时，gasPrice参数不能缺失")
 	}
 	var (
+		percent int64
 		txfee int64
 		//award int64
 		nofee bool
@@ -180,12 +183,31 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 		}
 		err error
 	)
+	// tdpos提名最小质押比例
+	if okk { // 存在该参数则赋值percent，否则默认零值，在update时过滤0
+		percent, err = strconv.ParseInt(args["nominatePercent"].(string), 10, 64)
+		if err != nil {
+			t.log.Warn("V__meta提案新提名最少质押比例参数类型错误", "err", err)
+			return nil, err
+		}
+		if percent < 0 {
+			t.log.Warn("V__meta提案新提名最少质押比例不能小于0")
+			return nil, errors.New("V__提案新提名最少质押比例不能为负数")
+		}
+		//fmt.Printf("NominatePercent%#v\n", args["nominatePercent"])
+	}
+
 	// 手续费 int64，提案中应为int字符串
 	if ok1 {
 		txfee , err = strconv.ParseInt(args["txFee"].(string), 10, 64)
 		if err != nil {
-			t.log.Error("V__meta提案修改转账手续费参数类型错误", "err", err)
+			t.log.Warn("V__meta提案修改转账手续费参数类型错误", "err", err)
 			return nil, err
+		}
+		if txfee < 0 {
+			t.log.Warn("V__meta提案手续费不能小于0")
+			// 如需免手续费模式，请通过提案noFee方式修改
+			return nil, errors.New("V__提案的转账手续费参数不能为负数")
 		}
 	}
 	// 出块奖励 string，提案中应该int字符串
@@ -238,6 +260,7 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 	}
 	return &ledger.RootConfig{
 		// todo 其它参数待添加
+		NominatePercent: percent,
 		TransferFeeAmount: txfee,
 		//Award: strconv.FormatInt(award,10),
 		NoFee: nofee,
@@ -344,11 +367,11 @@ func (t *Meta) GetTransferFeeAmount() int64 {
 
 // 更新配置，同时将其记录到账本中
 func (t *Meta) UpdateConfig(cfg *ledger.RootConfig, batch kvdb.Batch) error {
-	if cfg.TransferFeeAmount < 0 {
-		return errors.New("V__提案的转账手续费参数不能为负数")
-		//return errors.New("V__提案的转账手续费参数必须为正数；如需免手续费模式，请通过提案noFee方式修改")
-	}
 	tmpMeta := &pb.UtxoMeta{}
+	// tdpos提名时最少质押（占全网总资产）百分比
+	if cfg.NominatePercent != 0 {
+		t.Ledger.GenesisBlock.GetConfig().NominatePercent = cfg.NominatePercent
+	}
 	// 转账手续费
 	if cfg.TransferFeeAmount != 0 {
 		newMeta := proto.Clone(tmpMeta).(*pb.UtxoMeta)

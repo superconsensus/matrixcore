@@ -1441,10 +1441,15 @@ func (l *Ledger) GetTokenRequired(height int64) *big.Int{
 		}
 		preTotal = preTotal.Add(number)
 	}
-	// 最少质押量 = preTotal * 1.1^period次方 * 万分之一（精度10^8）
-	preTotal = preTotal.Mul(base).Div(decimal.NewFromInt(1000000000000))
+	// 最少质押量 = preTotal * 1.1^period次方 * 质押比例（可提案修改） * 精度10^8
+	percent := l.GenesisBlock.GetConfig().NominatePercent
+	if percent == 0 {
+		percent = 100000 // 默认十万分之一
+	}
+	preTotal = preTotal.Mul(base).Div(decimal.NewFromInt(percent*100000000))
 	// total小数点后四舍五入取整
 	preTotal = preTotal.Round(0)
+	//fmt.Println("提名质押百分比", percent, "本次质押需要", preTotal)
 	// 计算后的decimal存为big.int
 	need := big.NewInt(0)
 	need.SetString(preTotal.String(), 10)

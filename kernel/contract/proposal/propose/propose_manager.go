@@ -27,6 +27,7 @@ func NewProposeManager(ctx *ProposeCtx) (ProposeManager, error) {
 	register.RegisterKernMethod(utils.ProposalKernelContract, "CheckVoteResult", t.CheckVoteResult)
 	register.RegisterKernMethod(utils.ProposalKernelContract, "Trigger", t.Trigger)
 	register.RegisterKernMethod(utils.ProposalKernelContract, "Query", t.Query)
+	register.RegisterKernMethod("$meta", "setPercent", t.SetPercent)
 
 	mg := &Manager{
 		Ctx: ctx,

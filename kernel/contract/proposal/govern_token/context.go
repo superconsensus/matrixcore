@@ -10,6 +10,7 @@ import (
 	"github.com/superconsensus-chain/xupercore/kernel/ledger"
 	"github.com/superconsensus-chain/xupercore/lib/logs"
 	"github.com/superconsensus-chain/xupercore/lib/timer"
+	"math/big"
 )
 
 type LedgerRely interface {
@@ -19,6 +20,8 @@ type LedgerRely interface {
 	GetGenesisPreDistribution() ([]xledger.Predistribution, error)
 	// 获取状态机最新确认快照
 	GetTipXMSnapshotReader() (ledger.XMSnapshotReader, error)
+	// 计算UTXO总量视为治理代币总量
+	CalGovTokenTotal() (*big.Int, error)
 }
 
 type GovCtx struct {

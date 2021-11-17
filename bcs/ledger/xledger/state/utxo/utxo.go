@@ -34,7 +34,7 @@ import (
 
 // 常用VM执行错误码
 var (
-	ErrNoEnoughUTXO        = errors.New("没有足够的资金(AMN)来发起这笔交易")
+	ErrNoEnoughUTXO        = errors.New("没有足够的通证(AMN)来发起这笔交易")
 	ErrUTXONotFound        = errors.New("this utxo can not be found")
 	ErrInputOutputNotEqual = errors.New("input's amount is not equal to output's")
 	ErrUnexpected          = errors.New("this is a unexpected error")

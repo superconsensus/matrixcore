@@ -3,6 +3,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state"
 
@@ -23,6 +24,22 @@ func NewLedgerAgent(chainCtx *common.ChainCtx) *LedgerAgent {
 		log:      chainCtx.GetLog(),
 		chainCtx: chainCtx,
 	}
+}
+
+// 从状态机中获取UTXO总量并减去其中$账户（手续费）的数量，视为治理代币总量
+func (t *LedgerAgent) CalGovTokenTotal() (*big.Int, error) {
+	// utxo总量
+	total := t.chainCtx.State.GetTotal()
+	// 手续费地址下的utxo总量，实际上手续费最终会到矿工手上
+	/*balance, err := t.chainCtx.State.GetBalance("$")
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Println("UTXO总量", total, "$账户下总量", balance)// testa地址下的utxo量不需要减，因为UTXOTotal不会因为buy/sell而增减
+	total.Sub(total, balance)*/
+	// UTXO与治理代币兑换比，需要将总量再除以10^8
+	total.Div(total, big.NewInt(100000000))
+	return total, nil
 }
 
 // 从创世块获取创建合约账户消耗gas

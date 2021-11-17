@@ -47,10 +47,26 @@ func NewGovManager(ctx *GovCtx) (GovManager, error) {
 	mg := &Manager{
 		Ctx: ctx,
 	}
+	register.RegisterKernMethod(utils.GovernTokenKernelContract, "AllToken", mg.AllTokens)
 	register.RegisterKernMethod(utils.GovernTokenKernelContract, "BonusObtain", mg.BonusObtain)
 	register.RegisterKernMethod(utils.GovernTokenKernelContract, "BonusQuery", mg.BonusQuery)
 
 	return mg, nil
+}
+
+// 获取全网UTXO总量视为治理代币总量，这个方法只提供给提案proposal到截止投票高度时计算赞成票数比调用
+func (mgr *Manager) AllTokens(ctx contract.KContext) (*contract.Response, error) {
+	//fmt.Println("total supply", string(ctx.Args()["stopHeight"]))
+	total, err := mgr.Ctx.Ledger.CalGovTokenTotal()
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Println("全网治理代币总量", total.Int64())
+	return &contract.Response{
+		Status:  utils.StatusOK,
+		Message: "success",
+		Body:    []byte(total.String()),
+	}, nil
 }
 
 // 查询总计分红

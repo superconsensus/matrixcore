@@ -384,19 +384,24 @@ func (t *State) VerifyTxFee(tx *pb.Transaction) bool {
 		return true
 	}
 
-	for _, output := range tx.TxOutputs {
-		switch string(output.ToAddr) {
-		//手续费
-		case FeePlaceholder:
-			//手续费价格匹配
-			fee := big.NewInt(0).SetBytes(output.Amount)
-			// 由固定 1000000 改为 meta.txFeeAmount；该txFeeAmount可以通过提案修改，从而动态控制转账手续费
-			if fee.Int64() >= t.GetMeta().GetTransferFeeAmount() {
-				return true
+	if len(tx.TxInputsExt) > 0 {
+		// 合约交易(txInputExt/txOutputExt非空)
+		return true // 校验手续费与gasUsed
+	}else{
+		for _, output := range tx.TxOutputs {
+			switch string(output.ToAddr) {
+			//手续费
+			case FeePlaceholder:
+				//手续费价格匹配
+				fee := big.NewInt(0).SetBytes(output.Amount)
+				// 由固定 1000000 改为 meta.txFeeAmount；该txFeeAmount可以通过提案修改，从而动态控制转账手续费
+				if fee.Int64() >= t.GetMeta().GetTransferFeeAmount() {
+					return true
+				}
+			//空的收款人
+			case "":
+				return false
 			}
-		//空的收款人
-		case "":
-			return false
 		}
 	}
 	return false

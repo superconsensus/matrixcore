@@ -2,6 +2,7 @@ package govern_token
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	xledger "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
 	"github.com/superconsensus-chain/xupercore/kernel/contract"
@@ -282,7 +283,8 @@ func (t *KernMethod)CheckTokens(ctx contract.KContext,amount *big.Int) error {
 	availableBalance := big.NewInt(0)
 	availableBalance.Sub(senderBalance.TotalBalance, senderBalance.LockedBalance[lockType])
 	if availableBalance.Cmp(amount) == -1 {
-		return fmt.Errorf("lock gov tokens failed, account available balance insufficient")
+		//return fmt.Errorf("lock gov tokens failed, account available balance insufficient")
+		return fmt.Errorf("账户下可用治理代币不足")
 	}
 
 	return nil
@@ -394,7 +396,8 @@ func (t *KernMethod) LockGovernTokens(ctx contract.KContext) (*contract.Response
 	availableBalance := big.NewInt(0)
 	availableBalance.Sub(accountBalance.TotalBalance, accountBalance.LockedBalance[lockType])
 	if availableBalance.Cmp(amountLock) == -1 {
-		return nil, fmt.Errorf("lock gov tokens failed, account available balance insufficient")
+		//return nil, fmt.Errorf("lock gov tokens failed, account available balance insufficient")
+		return nil, fmt.Errorf("账户下可用治理代币不足")
 	}
 
 	accountBalance.LockedBalance[lockType].Add(accountBalance.LockedBalance[lockType], amountLock)
@@ -541,11 +544,12 @@ func (t *KernMethod) QueryAccountGovernTokens(ctx contract.KContext) (*contract.
 	}, nil
 }
 
+// 意义转变，不是纯粹的治理代币总量，而是网络中UTXO兑换为治理代币的数量
 func (t *KernMethod) TotalSupply(ctx contract.KContext) (*contract.Response, error) {
 	key := utils.MakeTotalSupplyKey()
 	totalSupplyBuf, err := ctx.Get(utils.GetGovernTokenBucket(), []byte(key))
 	if err != nil {
-		return nil, err
+		return nil, errors.New("全网暂无用户兑换治理代币")
 	}
 
 	totalSupply := big.NewInt(0)

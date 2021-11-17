@@ -61,6 +61,11 @@ func NewSchedule(xconfig *tdposConfig, log logs.Logger, ledger cctx.LedgerRely, 
 		log:                log,
 		ledger:             ledger,
 	}
+	if int(schedule.proposerNum) != len(schedule.validators) {
+		fmt.Println("V__配置文件中的初始验证人数量应与验证人字段数值一致")
+		log.Warn("V__配置文件中的初始验证人数量应与验证人字段数值一致", "配置", schedule)
+		return nil
+	}
 	index := 0
 	for index < len(schedule.validators) {
 		key := schedule.validators[index]

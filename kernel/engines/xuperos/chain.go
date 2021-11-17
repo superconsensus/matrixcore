@@ -246,11 +246,12 @@ func (t *Chain) PreExec(ctx xctx.XContext, reqs []*protos.InvokeRequest, initiat
 	}
 	//非无币模式下这儿转账加个手续费,不得低于1000000
 	// 获取配置的转账手续费
-	fee := t.ctx.State.GetMeta().GetTransferFeeAmount()
+	// 合约交易才会走到这里，手续费由gasPrice计算，不与txFeeAmount关联
+	//fee := t.ctx.State.GetMeta().GetTransferFeeAmount()
 	// fee := t.ctx.Ledger.GetTransferFeeAmount() // 同样可以实现
-	if invokeResponse.GasUsed < fee && !t.ctx.Ledger.GetNoFee(){
-		invokeResponse.GasUsed = fee
-	}
+	//if invokeResponse.GasUsed < fee && !t.ctx.Ledger.GetNoFee(){
+	//	invokeResponse.GasUsed = fee
+	//}
 
 	return invokeResponse, nil
 }

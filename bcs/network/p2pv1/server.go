@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -140,6 +141,12 @@ func (p *P2PServerV1) serve() {
 	network, ip, err := manet.DialArgs(p.address)
 	if err != nil {
 		panic(fmt.Sprintf("address error: address=%s", err))
+	}
+
+	//Compatible container runtime, listening ":port"
+	portIndex := strings.LastIndex(ip, ":")
+	if portIndex > 0 {
+		ip = ip[portIndex:]
 	}
 
 	l, err := net.Listen(network, ip)
@@ -315,17 +322,5 @@ func (p *P2PServerV1) connectStaticNodes() {
 		p.staticNodes[def.BlockChain] = allAddresses
 	}
 
-	remotePeerInfos, err := p.GetPeerInfo(allAddresses)
-	if err != nil {
-		p.log.Error("connect static node error", "error", err, "address", allAddresses)
-		return
-	}
-
-	for _, peerInfo := range remotePeerInfos {
-		p.accounts.Set(peerInfo.GetAccount(), peerInfo.GetAddress(), 0)
-		p.log.Trace("connect static node", "local", p.address, "peer", peerInfo.Address, "account", peerInfo.Account)
-	}
-
-	p.log.Trace("connect static node", "local", p.address, "send", len(allAddresses), "recv", len(remotePeerInfos))
-	return
+	p.GetPeerInfo(allAddresses)
 }

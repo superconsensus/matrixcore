@@ -474,7 +474,7 @@ func (l *Ledger) AssignRewards(address string, blockAward *big.Int) *big.Int {
 		return award
 	}
 	if termTable.NewCycle == true {
-		fmt.Printf("D__校验发现是新的周期\n")
+		//fmt.Printf("D__校验发现是新的周期\n")
 		return award
 	}
 
@@ -900,6 +900,8 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 
 		// 提现数量与到账高度
 		takeBonus, _ := big.NewInt(0).SetString(args["amount"], 10)
+		//fmt.Println("V__开始分红提现写表", hex.EncodeToString(tx.Txid), "当前高度", l.GetMeta().TrunkHeight, "提现数量", takeBonus.Int64())
+		l.xlog.Trace("V__开始分红提现写表", "交易id", hex.EncodeToString(tx.Txid), "当前高度", l.GetMeta().TrunkHeight, "提现数量", takeBonus.Int64())
 		targetHeight, _ := big.NewInt(0).SetString(args["height"], 10)
 
 		if allBonusData.DiscountQueue == nil {
@@ -907,11 +909,42 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 		}
 		// 用户提现map
 		discountQueue := &protos.BonusRewardDiscount{}
+		//fmt.Println("分红数据", allBonusData)
+		//fmt.Println("提现数据", allBonusData.DiscountQueue)
 		// 用户提现数据（为discountQueue的子字段）
 		userDiscount := make(map[string]string)
 		// 提现发起人
 		newestVoter := initiator
 		//fmt.Printf("%#v\n%#v\n", allBonusData.DiscountQueue, allBonusData.DiscountQueue[targetHeight.Int64()])
+		// 先检查可提现数量是否足够【重要】防止高频操作双花
+		allPools := allBonusData.BonusPools
+		//allQueue := allBonusData.DiscountQueue
+		// 所有分红池子奖励总和
+		reward := big.NewInt(0)
+		// 提现队列中因冻结而尚未到账的分红奖励
+		for _, pool := range allPools { // miner, pool := range pools
+			// 分红 = 票数 * 每票奖励 - 债务
+			voter, ok := pool.Voters[newestVoter]
+			// 测试用，本池子的分红
+			//thisPoolBonus := big.NewInt(0)
+			if ok {
+				// 票数
+				thisPoolVotes, _ := big.NewInt(0).SetString(voter.Amount, 10)
+				// 每票奖励
+				bonusPerVote, _ := big.NewInt(0).SetString(pool.BonusPerVote, 10)
+				// 债务
+				debt, _ := big.NewInt(0).SetString(voter.Debt, 10)
+				thisPoolVotes.Mul(thisPoolVotes, bonusPerVote).Sub(thisPoolVotes, debt)
+				reward.Add(reward, thisPoolVotes)
+			}
+		}
+
+		if reward.Cmp(takeBonus) < 0 {
+			fmt.Println("V__可提现数量不足，交易无效", hex.EncodeToString(tx.Txid), "可提现数量", reward.Int64(), "本次提现数量", takeBonus.Int64())
+			l.xlog.Error("V__错误的交易，可提现数量不足", "交易id: ", hex.EncodeToString(tx.Txid), "可提现数量", reward.Int64(), "本次提现数量", takeBonus.Int64())
+			return/* fmt.Errorf("错误的交易，可提现数量不足")*/
+		}
+
 		// height高度下是否已存在提现数据
 		queue, exist := allBonusData.DiscountQueue[targetHeight.Int64()]
 		if !exist {
@@ -1037,6 +1070,8 @@ func (l *Ledger) WriteThawTable(batch kvdb.Batch, cliAmount string, user string,
 			amount.Add(amount, tableValue)
 			//把当前冻结的放回到解冻
 			tabledata := &protos.FrozenDetails{
+				// 除完需要是整数
+				//Height: l.GetMeta().TrunkHeight + 1 + int64(10*24*3600/3*math.Pow10(0)),
 				Height: l.GetMeta().TrunkHeight + 1 + 288000,
 				Amount: value.Amount,
 			}
@@ -1081,6 +1116,7 @@ func (l *Ledger) WriteThawTable(batch kvdb.Batch, cliAmount string, user string,
 	NodeDetail := &protos.NodeDetail{
 		Address: user,
 		Amount:  amount.String(),
+		//Height:  l.GetMeta().TrunkHeight + 1 + int64(10*24*3600/3*math.Pow10(0)),
 		Height:  l.GetMeta().TrunkHeight + 1 + 288000,
 	}
 	NodeDetails := &protos.NodeDetails{}
@@ -1252,7 +1288,7 @@ func (l *Ledger) RevokeVote(batch kvdb.Batch, user string, Args map[string]strin
 
 //投票写表
 func (l *Ledger) VoteCandidateTable(batch kvdb.Batch, user string, Args map[string]string) error {
-	fmt.Printf("D__进入投票写表~~~~~~~~~~~~~~~~~~\n")
+	//fmt.Printf("D__进入投票写表~~~~~~~~~~~~~~~~~~\n")
 	CandidateTable := &protos.CandidateRatio{}
 	error := l.ReadBallotTable(user, CandidateTable)
 	if error != nil {
@@ -1614,7 +1650,7 @@ func (l *Ledger) WriteFreezeTable(batch kvdb.Batch, amount string, user string, 
 		l.xlog.Error("购买治理代币量amount与转账量数据不同", cliAmount.Int64(), "chainAmount", chainAmount.Int64())
 		return errors.New("购买治理代币量amount与转账量数据不同\n")
 	}
-	fmt.Printf("D__用户%s购买治理代币%s \n",user,amount)
+	//fmt.Printf("D__用户%s购买治理代币%s \n",user,amount)
 	keytalbe := "amount_" + user
 	//查看用户是否冻结过
 	PbTxBuf, kvErr := l.ConfirmedTable.Get([]byte(keytalbe))

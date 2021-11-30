@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
 	"math/big"
 	"math/rand"
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/golang/protobuf/proto"
 
 	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
 	"github.com/superconsensus-chain/xupercore/protos"
@@ -345,7 +344,11 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 			}
 			nBest := totalLow // 最优值，该值将动态调整（totalLow由所有零碎UTXO合计得到，映证最初的vfBest元素需要都为true）
 			// 随机逼近
-			for nRep := 0; nRep < 1000 && nBest != totalNeed; nRep++ { // 操作1000次，如果最优值等于目标值或者1000次结束，则退出循环
+			/*算法可能out of memory，还需要优化
+			testFlag := 0
+			start := time.Now()
+			fmt.Println("for start", start)*/
+			for nRep := 0; nRep < 100 && nBest != totalNeed; nRep++ { // 操作1000次，如果最优值等于目标值或者1000次结束，则退出循环
 				for i := range low { // 排除标志符设为false
 					vfIncluded[i] = false
 				}
@@ -353,6 +356,7 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 				fReachedTarget := false // 找到合适对象设为false
 				for nPass := 0; nPass < 2 && !fReachedTarget; nPass++ { // 进行两次操作，当两次操作完成或者找到合适对象时退出循环
 					for i := 0; i < len(low); i++ { // 遍历所有小于目标值的对象
+						/*testFlag ++*/
 						// go没有`if (nPass == 0 ? rand() % 2 : !vfIncluded[i])`这样的写法
 						addiction := false
 						if nPass == 0 {
@@ -378,6 +382,11 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 					}
 				}
 			}
+			/*stop := time.Now()
+			fmt.Println("for done", stop, "花费时间", stop.Sub(start).Seconds())
+			fmt.Println("循环次数", testFlag)
+			fmt.Println("slice size", len(vfBest))*/
+			//fmt.Println("占用内存include&best", vfIncluded, vfBest)
 			// larger存在且其UTXO比随机挑出的零碎UTXO组合更优，直接使用larger
 			if len(larger) > 0 && larger[0].Amount.Cmp(nBest) < 0 /*.Int64() <= nBest.Int64()*/ { // 最大值对象比累加对象要好
 				refTxid, offset, err := uv.parseUtxoKeys(string(link[larger[0]]))

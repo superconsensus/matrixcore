@@ -77,8 +77,83 @@ func (t *State) ImmediateVerifyTx(tx *pb.Transaction, isRootTx bool) (bool, erro
 			return false, err
 		}
 		if bytes.Compare(tx.Txid, txid) != 0 {
-			t.log.Warn("ImmediateVerifyTx: txid not match", "tx.Txid", tx.Txid, "txid", txid)
-			return false, fmt.Errorf("Txid verify failed")
+			//fmt.Printf("infos%v\n", tx.ContractRequests)
+			// 打印交易
+			/*fmt.Println("---print tx start---")
+			fmt.Println("initiator", tx.Initiator)
+			fmt.Println("txid", hex.EncodeToString(tx.Txid))
+			fmt.Println("blockid", hex.EncodeToString(tx.Blockid))
+			fmt.Println("desc", string(tx.Desc))
+			//fmt.Println("tx input")
+			for i, input := range tx.TxInputs {
+				fmt.Println(i, "input amount", big.NewInt(0).SetBytes(input.Amount).Int64())
+				fmt.Println(i, "input fromAddr", string(input.FromAddr))
+				fmt.Println(i, "input refTxid", hex.EncodeToString(input.RefTxid))
+				fmt.Println(i, "input refOffset", input.RefOffset)
+				fmt.Println(i, "input frozenHeight", input.FrozenHeight)
+			}
+			//fmt.Println("tx output")
+			for i, input := range tx.TxOutputs {
+				fmt.Println(i, "output amount", big.NewInt(0).SetBytes(input.Amount).Int64())
+				fmt.Println(i, "output toAddr", string(input.ToAddr))
+				fmt.Println(i, "output frozenHeight", input.FrozenHeight)
+			}
+			fmt.Println("nonce", tx.Nonce)
+			fmt.Println("time stamp", time.Unix(tx.Timestamp, 0))
+			fmt.Println("version", tx.Version)
+			for i, input := range tx.TxInputsExt {
+				fmt.Println(i, "inputExt bucket", input.Bucket)
+				fmt.Println(i, "inputExt key", string(input.Key))
+				fmt.Println(i, "inputExt refTxid", hex.EncodeToString(input.RefTxid))
+				fmt.Println(i, "inputExt refOffset", input.RefOffset)
+			}
+			for i, input := range tx.TxOutputsExt {
+				fmt.Println(i, "outputExt bucket", input.Bucket)
+				fmt.Println(i, "outputExt key", string(input.Key))
+				fmt.Println(i, "outputExt value", string(input.Value))
+			}
+			for i, request := range tx.ContractRequests {
+				fmt.Println(i, "request contract name", request.ContractName)
+				fmt.Println(i, "request module name", request.ModuleName)
+				fmt.Println(i, "request method name", request.MethodName)
+				fmt.Println(i, "request amount", request.Amount)
+				for s, i2 := range request.Args {
+					fmt.Println("request args k, v", s, string(i2), "height", big.NewInt(0).SetBytes(i2).Int64())
+				}
+				fmt.Println(i, "request args", request.Args)
+			}
+			for i, s := range tx.AuthRequire {
+				fmt.Println(i, "authRequire", s)
+			}
+			for i, sign := range tx.AuthRequireSigns {
+				fmt.Println(i, "authRequireSign publicKey", sign.PublicKey)
+				fmt.Println(i, "authRequireSign sign", hex.EncodeToString(sign.Sign))
+			}
+			for i, sign := range tx.InitiatorSigns {
+				fmt.Println(i, "initiatorSigns publicKey", sign.PublicKey)
+				fmt.Println(i, "initiatorSigns sign", hex.EncodeToString(sign.Sign))
+			}
+			fmt.Println("received timestamp", time.Unix(tx.ReceivedTimestamp, 0))
+			//fmt.Println("hd info originalHash", tx.HDInfo.OriginalHash)
+			//fmt.Println("hd info publicKey", tx.HDInfo.HdPublicKey)
+
+			if tx.ModifyBlock != nil {
+				fmt.Println("---no important---\nmodify block marked", tx.ModifyBlock.Marked)
+				fmt.Println("modify block effective txid", tx.ModifyBlock.EffectiveTxid)
+				fmt.Println("modify block effective height", tx.ModifyBlock.EffectiveHeight)
+				fmt.Println("modify block public key", tx.ModifyBlock.PublicKey)
+				fmt.Println("modify block sign", tx.ModifyBlock.Sign)
+			}
+			if tx.XuperSign != nil{
+				for i, key := range tx.XuperSign.PublicKeys {
+					fmt.Println(i, "xuper sign public key", string(key))
+				}
+				fmt.Println("xuper sign signature", string(tx.XuperSign.Signature))
+			}
+			fmt.Println("auto gen", tx.Autogen)
+			fmt.Println("---print tx done---")
+			t.log.Warn("ImmediateVerifyTx: txid not match", "tx.Txid", hex.EncodeToString(tx.Txid), "txid", hex.EncodeToString(txid))*/
+			return false, fmt.Errorf("V__交易哈希验证不匹配")
 		}
 
 		// get digestHash
@@ -135,7 +210,8 @@ func (t *State) ImmediateVerifyTx(tx *pb.Transaction, isRootTx bool) (bool, erro
 			} else {
 				err = ErrRWSetInvalid
 			}
-			return ok, err
+			//return ok, err
+			return ok, errors.New("V__交易读写集验证失败")
 		}
 		if !ok {
 			// always return RWSet Invalid Error if verification not passed

@@ -153,7 +153,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	// 1.1 查看是否有历史投票
 	v, ok := nominateValue[candidateName]
 	if !ok {
-		return common.NewContractErrResponse(common.StatusErr, emptyNominateKey.Error()), emptyNominateKey
+		return common.NewContractErrResponse(common.StatusErr, "撤销对象已不在候选列表中"), errors.New("撤销对象已不在候选列表中")
 	}
 	ballot, ok := v[contractCtx.Initiator()]
 	if !ok {
@@ -435,7 +435,8 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 		return common.NewContractErrResponse(common.StatusErr, notFoundErr.Error()), notFoundErr
 	}
 	if v < amount {
-		return common.NewContractErrResponse(common.StatusErr, "Your vote amount is less than have."), emptyNominateKey
+		tp.log.Warn("V__撤销的票数不能低于对目标所投的票数", "所投票数", v, "撤销数量", amount)
+		return common.NewContractErrResponse(common.StatusErr, "Your vote amount is less than have."), errors.New("撤销的票数不能低于对目标所投的票数")
 	}
 
 	// 2. 读取撤销记录，后续改写用
@@ -498,6 +499,7 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 		number := tempVoteValue[contractCtx.Initiator()] // 从读集中获取的最新票数
 		tempVoteValue[contractCtx.Initiator()] = number - amount
 		if number - amount < 0 {
+			tp.log.Warn("V__撤销的票数不能低于对目标所投的票数", "所投票数", number, "撤销数量", amount)
 			return common.NewContractErrResponse(common.StatusErr, "撤销的票数不能低于对目标所投的票数"), errors.New("撤销的票数不能低于对目标所投的票数")
 		}
 		newVoteBytes, err := json.Marshal(tempVoteValue)

@@ -112,7 +112,7 @@ func (t *KernMethod) AddTokens(ctx contract.KContext) (*contract.Response, error
 	//查找该用户是否购买
 	keyBuf, _ := ctx.Get(utils.GetGovernTokenBucket(), []byte(key))
 	if keyBuf == nil {
-		fmt.Printf("D__用户%s第一次购买\n",sender)
+		//fmt.Printf("D__用户%s第一次购买\n",sender)
 		balance.TotalBalance = amount
 	}else {
 		err := json.Unmarshal(keyBuf,balance)
@@ -122,7 +122,7 @@ func (t *KernMethod) AddTokens(ctx contract.KContext) (*contract.Response, error
 		}
 		balance.TotalBalance.Add(balance.TotalBalance,amount)
 	}
-	fmt.Printf("D__当前购买%d \n",amount.Int64())
+	//fmt.Printf("D__当前购买%d \n",amount.Int64())
 	//写表
 	balanceBuf, err := json.Marshal(balance)
 	if err != nil {
@@ -138,7 +138,7 @@ func (t *KernMethod) AddTokens(ctx contract.KContext) (*contract.Response, error
 	Totalkey := utils.MakeTotalSupplyKey()
 	totalSupplyBuf, _ := ctx.Get(utils.GetGovernTokenBucket(), []byte(Totalkey))
 	if totalSupplyBuf == nil {
-		fmt.Printf("D__第一次增加总资产\n")
+		//fmt.Printf("D__第一次增加总资产\n")
 		err := ctx.Put(utils.GetGovernTokenBucket(), []byte(Totalkey), []byte(amount.String()))
 		if err != nil {
 			fmt.Printf("D__第一次写总资产表失败\n")

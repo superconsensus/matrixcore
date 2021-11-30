@@ -39,6 +39,8 @@ type LedgerReader interface {
 	PledgeVotingRecords(address string)(*protos.PledgeVotingResponse,error)
 	//
 	GetVerification(address string)(*protos.VerificationTable,error)
+	// 查询tdpos投票分红接口
+	GovernTokenBonusQuery(account string)(*protos.BonusQueryReply, error)
 
 	GetSystemStatusExplorer()(*protos.BCStatusExplorer,error)
 }
@@ -51,9 +53,9 @@ type ledgerReader struct {
 
 var (
 	// leveldb: not found
-	DBNotFound = errors.New("没有该用户的数据记录")
+	DBNotFound = errors.New("数据库表没有记录")
 	// 其它错误
-	UnKnowErr = errors.New("未知错误")
+	ParseErr = errors.New("解析数据库记录错误")
 )
 
 func NewLedgerReader(chainCtx *common.ChainCtx, baseCtx xctx.XContext) LedgerReader {
@@ -176,7 +178,7 @@ func (t *ledgerReader)Test(address string)(*protos.CandidateRatio,error){
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, out)
 	if parserErr != nil  {
-		return nil, UnKnowErr
+		return nil, ParseErr
 	}
 
 	return out,nil
@@ -193,17 +195,24 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 		return nil, DBNotFound
 	}
 	out.TotalAmount = CandidateRatio.TatalVote
+	// 提名时质押的金额，普通投票用户如果没有提名过是没有NominateDetails字段的，需要注意空指针
+	if CandidateRatio.NominateDetails != nil {
+		nominateDetails, ok := CandidateRatio.NominateDetails[address]
+		if ok {
+			out.Freezetotal = nominateDetails.Amount
+		}
+	}
 	out.UsedAmount = CandidateRatio.Used
 	//获取冻结信息表
 	FrozenAssetsTable := &protos.FrozenAssetsTable{}
 	keytable :=  "amount_" + address
 	PbTxBuf, kvErr := t.chainCtx.Ledger.ConfirmedTable.Get([]byte(keytable))
 	if kvErr != nil {
-		return nil, UnKnowErr
+		return nil, DBNotFound
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, FrozenAssetsTable)
 	if parserErr != nil  {
-		return nil, UnKnowErr
+		return nil, ParseErr
 	}
 	out.FrozenAssetsTable = FrozenAssetsTable
 
@@ -246,12 +255,12 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 func (t *ledgerReader) ReadUserBallot(operator string,table *protos.CandidateRatio) (*protos.CandidateRatio,error) {
 	keytable := "ballot_" + operator
 	PbTxBuf, kvErr := t.chainCtx.Ledger.ConfirmedTable.Get([]byte(keytable))
-	if(kvErr != nil) {
-		return nil,kvErr
+	if kvErr != nil {
+		return nil, DBNotFound
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, table)
 	if parserErr != nil  {
-		return nil,parserErr
+		return nil, ParseErr
 	}
 	return table,nil
 }
@@ -271,11 +280,11 @@ func (t *ledgerReader)GetSystemStatusExplorer()(*protos.BCStatusExplorer,error){
 		parserErr := proto.Unmarshal(PbTxBuf, freetable)
 		if parserErr != nil {
 			t.log.Warn("D__解析tdpos_freezes_total_assets失败", "err", parserErr)
-			return out,nil
+			return out, ParseErr
 		}
 	}else {
 		t.log.Warn("D__解析tdpos_freezes_total_assets为空")
-		return out,nil
+		return out, DBNotFound
 	}
 
 	//获取冻结总资产
@@ -380,7 +389,7 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 			VerificationInfo.Percentage = "0%"
 			VerificationInfo.MyTotal = "0"
 			// 按理来说这里应该是0，但是为0返回时该字段会被过滤，因此返回-1
-			VerificationInfo.Ratio = -1
+			VerificationInfo.Ratio = 0
 			if out.Verification == nil {
 				out.Verification = make(map[string]*protos.VerificationInfo)
 			}
@@ -466,4 +475,86 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 		out.TimeLeft = 0
 	}
 	return out, nil
+}
+
+// tdpos投票分红查询RPC接口
+func (t *ledgerReader)GovernTokenBonusQuery(account string)(*protos.BonusQueryReply, error) {
+	l := t.chainCtx.Ledger
+	bonusData := &protos.AllBonusData{}
+	allBonusDataBytes, err := l.ConfirmedTable.Get([]byte("all_bonus_data"))
+	if err == nil {
+		pe := proto.Unmarshal(allBonusDataBytes, bonusData)
+		if pe != nil {
+			t.log.Warn("V__查询分红数据反序列化出错", pe)
+			return nil, errors.New("V__查询分红数据反序列化出错\n")
+		}
+		// 所有分红池
+		pools := bonusData.BonusPools
+		// 提现队列
+		queue := bonusData.DiscountQueue
+		// 所有分红池子奖励总和
+		reward := big.NewInt(0)
+		// 提现队列中因冻结而尚未到账的分红奖励
+		frozen := big.NewInt(0)
+
+		// 测试用，查看各单个池子的分红
+		//bonusEveryPools := make(map[string]*big.Int)
+
+		for _, pool := range pools { // miner, pool := range pools
+			// 分红 = 票数 * 每票奖励 - 债务
+			voter, ok := pool.Voters[account]
+			// 测试用，本池子的分红
+			//thisPoolBonus := big.NewInt(0)
+			if ok {
+				// 票数
+				thisPoolVotes, _ := big.NewInt(0).SetString(voter.Amount, 10)
+				// 每票奖励
+				bonusPerVote, _ := big.NewInt(0).SetString(pool.BonusPerVote, 10)
+				// 债务
+				debt, _ := big.NewInt(0).SetString(voter.Debt, 10)
+				thisPoolVotes.Mul(thisPoolVotes, bonusPerVote).Sub(thisPoolVotes, debt)
+				// 测试用，记录本池子的分红
+				//bonusEveryPools[miner] = thisPoolVotes
+				reward.Add(reward, thisPoolVotes)
+			}
+		}
+		//fmt.Println("V__测试校验查询分红", bonusEveryPools)
+
+		for _, discount := range queue {
+			value, ok := discount.UserDiscount[account]
+			if ok {
+				// 提现数量
+				amount, _ := big.NewInt(0).SetString(value, 10)
+				frozen.Add(frozen, amount)
+			}
+		}
+		allReward := big.NewInt(0).Add(reward, frozen)
+		var resp string
+		if frozen.Int64() != 0 {
+			resp = fmt.Sprintf("分红奖励总量:%v, 其中包含因冻结尚未到账的数量为:%v", allReward, frozen)
+		}else {
+			resp = fmt.Sprintf("分红奖励总量:%v", reward)
+		}
+
+		reply := &protos.BonusQueryReply{}
+		reply.Bonus = reward.Int64()
+		reply.Info = resp
+
+		// 查询最新区块，获取区块高度
+		blk, err := l.QueryBlock(t.chainCtx.State.GetLatestBlockid())
+		nominateTokenNeed := big.NewInt(0)
+		if err != nil {
+			//fmt.Println("V__获取最新区块失败")
+			t.log.Warn("V__获取最新区块失败")
+		}else {
+			// tdpos共识提名候选人需要质押治理代币的最少量
+			nominateTokenNeed = l.GetTokenRequired(blk.GetHeight())
+			reply.TokenNeed = nominateTokenNeed.String()
+		}
+		//fmt.Println("分红总量", reward.Int64())
+
+		return reply, nil
+	}else {
+		return nil, errors.New("V__目前暂无分红信息")
+	}
 }

@@ -43,3 +43,13 @@ message TxOutput {
     int64 frozen_height = 4;
 }
 
+// 查询分红响应
+message BonusQueryReply {
+    // 分红数量
+    int64 bonus = 1;
+    // 分红信息提示
+    string info = 2;
+    // tdpos共识提名候选人需要质押治理代币的最少量
+    string token_need = 3;
+}
+

@@ -384,8 +384,8 @@ func (t *State) VerifyTxFee(tx *pb.Transaction) bool {
 		return true
 	}
 
-	if len(tx.TxInputsExt) > 0 {
-		// 合约交易(txInputExt/txOutputExt非空)
+	if len(tx.TxInputsExt) > 0 || len(tx.ContractRequests) > 0 {
+		// 合约交易(contractRequests非空)
 		return true // 校验手续费与gasUsed
 	}else{
 		for _, output := range tx.TxOutputs {
@@ -999,10 +999,10 @@ func (t * State)checkParachain(tx *pb.Transaction) error {
 		}
 	}
 	//需要的手续费
-	Amount := big.NewInt(10000000000)
+	Amount := big.NewInt(100000000000)
 	if feeAmount.Cmp(Amount) == -1  {
 		fmt.Printf("DERROR__创建联盟链输入的通证：%d \n",feeAmount.Int64())
-		return errors.New("D__创建联盟链手续费需要100个通证\n")
+		return errors.New("D__创建联盟链手续费需要1000个通证\n")
 	}
 	return nil
 }
@@ -1085,8 +1085,10 @@ func (t *State) checkNominateCandidate(Args map[string]string ) error {
 		return  errors.New("D__ratio参数取值必须在0-100之间\n")
 	}
 	if newAmount.Cmp(TotalAmount) == -1 {
-		fmt.Printf("D__当前抵押资产:%d , 全网万分之一资产:%d \n",newAmount.Int64(),TotalAmount.Int64())
-		return  errors.New("D__提名候选人抵押数量不得低于全网总资产的万分之一\n")
+		// tdpos提名质押需要的比例
+		percent := t.sctx.Ledger.GetGenesisBlock().GetConfig().GetNominatePercent()
+		fmt.Printf("D__当前抵押资产:%d , 全网1/%d资产:%d \n", newAmount.Int64(), percent, TotalAmount.Int64())
+		return  fmt.Errorf("D__提名候选人抵押数量不得低于全网总资产的1/%d(%d)\n", percent, TotalAmount.Int64())
 	}
 	return nil
 }
@@ -1205,6 +1207,7 @@ func (t *State) DiscountTx(FromAddr string, batch kvdb.Batch,Amount string) (*pb
 	utxoTx.Timestamp = time.Now().UnixNano()
 	utxoTx.Txid, _ = txhash.MakeTransactionID(utxoTx)
 	fmt.Printf("V__分红提现奖励到账，交易id %s\n", hex.EncodeToString(utxoTx.Txid))
+	t.log.Trace("V__分红提现奖励到账", "交易id %s\n", hex.EncodeToString(utxoTx.Txid), "地址", address, "数量", amount.Int64())
 	return utxoTx, nil
 }
 

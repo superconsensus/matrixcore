@@ -621,11 +621,11 @@ func (t *Miner) packBlock(ctx xctx.XContext, height int64,
 		remainAward *big.Int
 		err2 error
 	)
-	if height < /*200000*/0 {
-		awardTx, remainAward, err2 = t.getAwardTx(height, flag)
-	}else {
+	//if height < /*200000*/0 {
+	//	awardTx, remainAward, err2 = t.getAwardTx(height, flag)
+	//}else {
 		awardTx, remainAward, err2 = t.getAwardTx(height,false)
-	}
+	//}
 	if err2 != nil {
 		return nil, err2
 	}
@@ -644,13 +644,13 @@ func (t *Miner) packBlock(ctx xctx.XContext, height int64,
 	}
 
 	//投票奖励分配
-	if height < /*200000*/0 && remainAward != nil && remainAward.Int64() > 0 && !flag{
-		voteTxs, err :=t.GenerateVoteAward(t.ctx.Address.Address,remainAward)
-		if err != nil {
-			ctx.GetLog().Warn("D__[Vote_Award] fail to generate vote award",  "err", err)
-		}
-		txList = append(txList, voteTxs...)
-	}
+	//if height < /*200000*/0 && remainAward != nil && remainAward.Int64() > 0 && !flag{
+	//	voteTxs, err :=t.GenerateVoteAward(t.ctx.Address.Address,remainAward)
+	//	if err != nil {
+	//		ctx.GetLog().Warn("D__[Vote_Award] fail to generate vote award",  "err", err)
+	//	}
+	//	txList = append(txList, voteTxs...)
+	//}
 
 	bonusData := &protos.AllBonusData{}
 	poolsBytes, getE := t.ctx.Ledger.ConfirmedTable.Get([]byte("all_bonus_data"))

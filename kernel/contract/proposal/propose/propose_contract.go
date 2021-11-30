@@ -328,8 +328,8 @@ func (t *KernMethod) CheckVoteResult(ctx contract.KContext) (*contract.Response,
 	//govTArg["stopHeight"] = []byte(proposal.Args["stop_vote_height"].(string))
 
 	// 获取治理代币总额，以及投票阈值
-	totalSupplyRes, err := ctx.Call("xkernel", utils.GovernTokenKernelContract, "TotalSupply", nil)
-	//totalSupplyRes, err := ctx.Call("xkernel", utils.GovernTokenKernelContract, "AllTokens", nil)
+	//totalSupplyRes, err := ctx.Call("xkernel", utils.GovernTokenKernelContract, "TotalSupply", nil)
+	totalSupplyRes, err := ctx.Call("xkernel", utils.GovernTokenKernelContract, "AllTokens", nil)
 	if err != nil {
 		return nil, fmt.Errorf("CheckVoteResult failed, query govern token totalsupply error")
 	}

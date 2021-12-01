@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	common "github.com/superconsensus/matrixcore/kernel/consensus/base/common"
+	"github.com/superconsensus/matrixcore/kernel/contract"
 )
 
 // runChangeValidates 候选人变更，替代原三代合约的add_validates/delete_validates/change_validates三个操作方法

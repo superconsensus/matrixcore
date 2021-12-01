@@ -6,8 +6,8 @@ import (
 
 	"github.com/emirpasic/gods/trees/redblacktree"
 	"github.com/emirpasic/gods/utils"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
 )
 
 type MemXModel struct {

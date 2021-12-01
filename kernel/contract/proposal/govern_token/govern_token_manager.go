@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/shopspring/decimal"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
-	pb "github.com/superconsensus-chain/xupercore/protos"
-	"math/big"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/proposal/utils"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 // Manager manages all gov releated data, providing read/write interface
@@ -41,9 +42,8 @@ func NewGovManager(ctx *GovCtx) (GovManager, error) {
 	register.RegisterKernMethod(utils.GovernTokenKernelContract, "UnLock", t.UnLockGovernTokens)
 	register.RegisterKernMethod(utils.GovernTokenKernelContract, "Query", t.QueryAccountGovernTokens)
 	register.RegisterKernMethod(utils.GovernTokenKernelContract, "TotalSupply", t.TotalSupply)
-	register.RegisterKernMethod(utils.GovernTokenKernelContract,"Buy",t.AddTokens)
-	register.RegisterKernMethod(utils.GovernTokenKernelContract,"Sell",t.SubTokens)
-
+	register.RegisterKernMethod(utils.GovernTokenKernelContract, "Buy", t.AddTokens)
+	register.RegisterKernMethod(utils.GovernTokenKernelContract, "Sell", t.SubTokens)
 
 	mg := &Manager{
 		Ctx: ctx,
@@ -128,15 +128,15 @@ func (mgr *Manager) BonusQuery(ctx contract.KContext) (*contract.Response, error
 		var resp string
 		if frozen.Int64() != 0 {
 			resp = fmt.Sprintf("分红奖励总量:%v, 其中包含因冻结尚未到账的数量为:%v", allReward, frozen)
-		}else {
+		} else {
 			resp = fmt.Sprintf("分红奖励总量:%v", reward)
 		}
-		return  &contract.Response{
-				Status:  utils.StatusOK,
-				Message: reward.String(),
-				Body:    []byte(resp),
-			}, nil
-	}else {
+		return &contract.Response{
+			Status:  utils.StatusOK,
+			Message: reward.String(),
+			Body:    []byte(resp),
+		}, nil
+	} else {
 		return nil, errors.New("V__目前暂无分红信息")
 	}
 
@@ -192,12 +192,12 @@ func (mgr *Manager) SyncCheckBonus(ctx contract.KContext, height int64) (*big.In
 		}
 		if flag {
 			return reward, nil
-		}else {
+		} else {
 			//fmt.Println("非同步", "请求中的高度参数", height, "当前高度", ledger.GetMeta().TrunkHeight)
 			mgr.Ctx.XLog.Warn("非同步，提现高度出错", "请求中的高度参数", height, "当前高度", ledger.GetMeta().TrunkHeight)
 			return nil, errors.New("V__操作异常，请刷新页面后重试")
 		}
-	}else {
+	} else {
 		return big.NewInt(0), errors.New("V__目前暂无分红信息")
 	}
 }
@@ -233,7 +233,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 		return nil, rewardE
 	}
 	available, _ := big.NewInt(0).SetString(response.Message, 10)
-	if realHeight.Int64() - nowHeight == 2{
+	if realHeight.Int64()-nowHeight == 2 {
 		// 正常交易处理
 		//fmt.Println("##可用数量", available.Int64())
 		if available.Cmp(takeBonus) < 0 {
@@ -246,7 +246,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 			takeFloat, _ := deciTake.Float64()
 			return nil, fmt.Errorf("V__可供提现分红奖励不足提现数量，可用数量:%.8f,提现数量:%.8f", availFloat, takeFloat)
 		}
-	}else if realHeight.Int64() - nowHeight == 1 {
+	} else if realHeight.Int64()-nowHeight == 1 {
 		// 在同步
 		//fmt.Println("正常执行计算可用数量", available)
 		syncAvailable, syncErr := mgr.SyncCheckBonus(ctx, realHeight.Int64())
@@ -264,7 +264,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 			takeFloat, _ := deciTake.Float64()
 			return nil, fmt.Errorf("V__可供提现分红奖励不足提现数量，可用数量:%.8f,提现数量:%.8f", availFloat, takeFloat)
 		}
-	}else {
+	} else {
 		// 高度参数错误，拒绝处理
 		mgr.Ctx.XLog.Warn("提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
 		//fmt.Println("提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
@@ -313,7 +313,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 		lastHeight := oldHeight.Int64()
 		if lastHeight == realHeight.Int64() {
 			return nil, errors.New("V__同一账户一个块内只能提现一次分红")
-		}else if lastHeight > realHeight.Int64() {
+		} else if lastHeight > realHeight.Int64() {
 			return nil, errors.New("V__交易请求超过当前区块高度，无法处理")
 		}
 	}
@@ -334,7 +334,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 	}
 	ctx.AddResourceUsed(delta)
 
-	return  &contract.Response{
+	return &contract.Response{
 		Status:  utils.StatusOK,
 		Message: "success",
 		Body:    nil,

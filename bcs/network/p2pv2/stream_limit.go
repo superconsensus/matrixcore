@@ -6,8 +6,8 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
+	nctx "github.com/superconsensus/matrixcore/kernel/network/context"
+	"github.com/superconsensus/matrixcore/lib/logs"
 )
 
 // StreamLimit limit the peerID amount of same ip

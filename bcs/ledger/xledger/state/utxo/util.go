@@ -1,9 +1,9 @@
 package utxo
 
 import (
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/kernel/permission/acl/utils"
-	"github.com/superconsensus-chain/xupercore/protos"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/kernel/permission/acl/utils"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 // queryContractStatData query stat data about contract, such as total contract and total account

@@ -3,8 +3,8 @@ package sandbox
 import (
 	"bytes"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
 )
 
 // peekIterator用来辅助multiIterator更容易实现

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
-	kmock "github.com/superconsensus-chain/xupercore/kernel/consensus/mock"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	common "github.com/superconsensus/matrixcore/kernel/consensus/base/common"
+	kmock "github.com/superconsensus/matrixcore/kernel/consensus/mock"
 )
 
 var (

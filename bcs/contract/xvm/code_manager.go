@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge"
+	"github.com/superconsensus/matrixcore/protos"
 	"github.com/xuperchain/xvm/compile"
 	"github.com/xuperchain/xvm/exec"
 	"golang.org/x/sync/singleflight"

@@ -17,19 +17,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/def"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/context"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/meta"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/xmodel"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	aclu "github.com/superconsensus-chain/xupercore/kernel/permission/acl/utils"
-	"github.com/superconsensus-chain/xupercore/lib/cache"
-	crypto_base "github.com/superconsensus-chain/xupercore/lib/crypto/client/base"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
-	"github.com/superconsensus-chain/xupercore/lib/utils"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/def"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/context"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/meta"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/xmodel"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	aclu "github.com/superconsensus/matrixcore/kernel/permission/acl/utils"
+	"github.com/superconsensus/matrixcore/lib/cache"
+	crypto_base "github.com/superconsensus/matrixcore/lib/crypto/client/base"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/storage/kvdb"
+	"github.com/superconsensus/matrixcore/lib/utils"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 // 常用VM执行错误码
@@ -184,7 +184,7 @@ func (uv *UtxoVM) CheckInputEqualOutput(tx *pb.Transaction) error {
 		// coinbase交易，输入输出不必相等, 特殊处理
 		return nil
 	}
-	if  inputSum.Cmp(big.NewInt(0)) == 0 && tx.ThawCoinbase {
+	if inputSum.Cmp(big.NewInt(0)) == 0 && tx.ThawCoinbase {
 		// thawcoinbase交易，输入输出不必相等, 特殊处理
 		return nil
 	}

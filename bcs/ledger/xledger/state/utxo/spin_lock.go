@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/xmodel"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/xmodel"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
 )
 
 const (

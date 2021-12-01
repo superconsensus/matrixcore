@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	bmock "github.com/superconsensus-chain/xupercore/bcs/consensus/mock"
-	cctx "github.com/superconsensus-chain/xupercore/kernel/consensus/context"
-	"github.com/superconsensus-chain/xupercore/kernel/consensus/def"
-	kmock "github.com/superconsensus-chain/xupercore/kernel/consensus/mock"
+	bmock "github.com/superconsensus/matrixcore/bcs/consensus/mock"
+	cctx "github.com/superconsensus/matrixcore/kernel/consensus/context"
+	"github.com/superconsensus/matrixcore/kernel/consensus/def"
+	kmock "github.com/superconsensus/matrixcore/kernel/consensus/mock"
 )
 
 func getSingleConsensusConf() []byte {

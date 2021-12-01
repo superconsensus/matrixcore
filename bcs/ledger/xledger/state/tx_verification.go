@@ -12,18 +12,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/utxo"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/utxo/txhash"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/xmodel"
-	txn "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/tx"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/sandbox"
-	kledger "github.com/superconsensus-chain/xupercore/kernel/ledger"
-	aclu "github.com/superconsensus-chain/xupercore/kernel/permission/acl/utils"
-	"github.com/superconsensus-chain/xupercore/lib/crypto/client"
-	"github.com/superconsensus-chain/xupercore/lib/metrics"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/utxo"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/utxo/txhash"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/xmodel"
+	txn "github.com/superconsensus/matrixcore/bcs/ledger/xledger/tx"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/sandbox"
+	kledger "github.com/superconsensus/matrixcore/kernel/ledger"
+	aclu "github.com/superconsensus/matrixcore/kernel/permission/acl/utils"
+	"github.com/superconsensus/matrixcore/lib/crypto/client"
+	"github.com/superconsensus/matrixcore/lib/metrics"
+	"github.com/superconsensus/matrixcore/protos"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -989,7 +989,7 @@ func (t *State) verifyDAGTxs(blockHeight int64, txs []*pb.Transaction, isRootTx 
 					return errors.New("dotx failed to ImmediateVerifyAutoTx error")
 				}
 			}
-			if !tx.Autogen && !tx.Coinbase &&!tx.ThawCoinbase && !tx.VoteCoinbase{
+			if !tx.Autogen && !tx.Coinbase && !tx.ThawCoinbase && !tx.VoteCoinbase {
 				// 校验用户交易
 				if ok, err := t.ImmediateVerifyTx(tx, isRootTx); !ok {
 					t.log.Warn("dotx failed to ImmediateVerifyTx", "txid", fmt.Sprintf("%x", tx.Txid), "err", err)

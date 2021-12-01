@@ -3,8 +3,8 @@ package contract
 import (
 	"math/big"
 
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 type SandboxConfig struct {

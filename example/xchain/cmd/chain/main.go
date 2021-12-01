@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/superconsensus-chain/xupercore/example/xchain/cmd/chain/cmd"
-	xdef "github.com/superconsensus-chain/xupercore/example/xchain/common/def"
+	"github.com/superconsensus/matrixcore/example/xchain/cmd/chain/cmd"
+	xdef "github.com/superconsensus/matrixcore/example/xchain/common/def"
 
 	"github.com/spf13/cobra"
 )

@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	bmock "github.com/superconsensus-chain/xupercore/bcs/consensus/mock"
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	cctx "github.com/superconsensus-chain/xupercore/kernel/consensus/context"
-	"github.com/superconsensus-chain/xupercore/kernel/consensus/def"
-	kmock "github.com/superconsensus-chain/xupercore/kernel/consensus/mock"
+	bmock "github.com/superconsensus/matrixcore/bcs/consensus/mock"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	cctx "github.com/superconsensus/matrixcore/kernel/consensus/context"
+	"github.com/superconsensus/matrixcore/kernel/consensus/def"
+	kmock "github.com/superconsensus/matrixcore/kernel/consensus/mock"
 )
 
 func TestUnmarshalConfig(t *testing.T) {

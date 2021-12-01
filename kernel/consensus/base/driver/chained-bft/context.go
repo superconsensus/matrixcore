@@ -5,9 +5,9 @@ import (
 	"container/list"
 	"errors"
 
-	chainedBftPb "github.com/superconsensus-chain/xupercore/kernel/consensus/base/driver/chained-bft/pb"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	"github.com/superconsensus-chain/xupercore/lib/utils"
+	chainedBftPb "github.com/superconsensus/matrixcore/kernel/consensus/base/driver/chained-bft/pb"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/utils"
 )
 
 var _ QuorumCertInterface = (*QuorumCert)(nil)

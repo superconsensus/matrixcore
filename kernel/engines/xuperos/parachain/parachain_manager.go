@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/spf13/viper"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/common"
 )
 
 const (

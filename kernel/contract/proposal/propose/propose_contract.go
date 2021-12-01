@@ -7,18 +7,18 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/proposal/utils"
 )
 
 type KernMethod struct {
-	BcName string
+	BcName  string
 	Percent int64 // 全网提案最小赞成比例，计算票数大于等于此值时提案通过；可通过提案修改
 }
 
 func NewKernContractMethod(bcName string) *KernMethod {
 	t := &KernMethod{
-		BcName: bcName,
+		BcName:  bcName,
 		Percent: 51, // 默认值51%
 	}
 	return t
@@ -616,7 +616,7 @@ func (t KernMethod) checkProposalArgs(proposal *utils.Proposal, height string) e
 		if triggerHeight.Cmp(voteStopHeight) != 1 {
 			return fmt.Errorf("V__生效高度必须大于截止投票高度")
 		}
-	}else {
+	} else {
 		return fmt.Errorf("V__提案生效高度height缺失或为0")
 	}
 

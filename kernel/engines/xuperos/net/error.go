@@ -1,8 +1,8 @@
 package xuperos
 
 import (
-	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/common"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 var errorType = map[error]protos.XuperMessage_ErrorType{

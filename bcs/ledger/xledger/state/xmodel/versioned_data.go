@@ -3,8 +3,8 @@ package xmodel
 import (
 	"fmt"
 
-	kledger "github.com/superconsensus-chain/xupercore/kernel/ledger"
-	"github.com/superconsensus-chain/xupercore/protos"
+	kledger "github.com/superconsensus/matrixcore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 func parseVersion(version string) ([]byte, int, error) {

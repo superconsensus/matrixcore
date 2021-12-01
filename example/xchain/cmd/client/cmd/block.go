@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	blkcmd "github.com/superconsensus-chain/xupercore/example/xchain/cmd/client/cmd/block"
-	"github.com/superconsensus-chain/xupercore/example/xchain/cmd/client/common/global"
-	xdef "github.com/superconsensus-chain/xupercore/example/xchain/common/def"
+	blkcmd "github.com/superconsensus/matrixcore/example/xchain/cmd/client/cmd/block"
+	"github.com/superconsensus/matrixcore/example/xchain/cmd/client/common/global"
+	xdef "github.com/superconsensus/matrixcore/example/xchain/common/def"
 
 	"github.com/spf13/cobra"
 )

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
 )
 
 type BlockAgent struct {

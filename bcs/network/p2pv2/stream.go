@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
-	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
-	"github.com/superconsensus-chain/xupercore/kernel/network/config"
-	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
-	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	xctx "github.com/superconsensus/matrixcore/kernel/common/xcontext"
+	"github.com/superconsensus/matrixcore/kernel/network/config"
+	nctx "github.com/superconsensus/matrixcore/kernel/network/context"
+	"github.com/superconsensus/matrixcore/kernel/network/p2p"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	pb "github.com/superconsensus/matrixcore/protos"
 
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/libp2p/go-libp2p-core/network"

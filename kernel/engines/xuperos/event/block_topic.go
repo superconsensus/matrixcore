@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 var _ Topic = (*BlockTopic)(nil)

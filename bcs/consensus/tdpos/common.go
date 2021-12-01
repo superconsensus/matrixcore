@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"strconv"
 
-	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
-	cctx "github.com/superconsensus-chain/xupercore/kernel/consensus/context"
+	common "github.com/superconsensus/matrixcore/kernel/consensus/base/common"
+	cctx "github.com/superconsensus/matrixcore/kernel/consensus/context"
 )
 
 const (

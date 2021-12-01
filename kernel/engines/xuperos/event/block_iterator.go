@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
 )
 
 var _ Iterator = (*BlockIterator)(nil)

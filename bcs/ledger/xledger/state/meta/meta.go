@@ -4,19 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
 	"strconv"
 	"sync"
 
+	common "github.com/superconsensus/matrixcore/kernel/consensus/base/common"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/def"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/context"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/def"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/context"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/storage/kvdb"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 type Meta struct {
@@ -164,15 +165,15 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 	}
 	value, ok := args["noFee"].(bool)
 	_, ok4 := args["gasPrice"]
-	if ok && !value && !ok4{ // 如果ok3-noFee-存在且值为F（F表示需要手续费），且ok4-gasPrice-缺失，报错
+	if ok && !value && !ok4 { // 如果ok3-noFee-存在且值为F（F表示需要手续费），且ok4-gasPrice-缺失，报错
 		t.log.Error("V__meta提案设置需要手续费模式时，gasPrice参数不能缺失")
 		return nil, errors.New("V__meta提案设置需要手续费时，gasPrice参数不能缺失")
 	}
 	var (
 		percent int64
-		txfee int64
+		txfee   int64
 		//award int64
-		nofee bool
+		nofee    bool
 		gasBytes []byte
 		//gas ledger.GasPrice
 		gas struct {
@@ -199,7 +200,7 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 
 	// 手续费 int64，提案中应为int字符串
 	if ok1 {
-		txfee , err = strconv.ParseInt(args["txFee"].(string), 10, 64)
+		txfee, err = strconv.ParseInt(args["txFee"].(string), 10, 64)
 		if err != nil {
 			t.log.Warn("V__meta提案修改转账手续费参数类型错误", "err", err)
 			return nil, err
@@ -235,7 +236,7 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 			gasBytes, _ = json.Marshal(&gasMap)
 			err := json.Unmarshal(gasBytes, &gas)
 			if err != nil {
-				t.log.Error("V__meta提案gasPrice参数反序列化失败","err", err)
+				t.log.Error("V__meta提案gasPrice参数反序列化失败", "err", err)
 				return nil, errors.New("V__meta提案gasPrice参数反序列化失败")
 			}
 			// gas四个字段要么全0（无需手续费模式），要么全非0（需要手续费模式）；此层判断要求全非0
@@ -249,7 +250,7 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 				return nil, errors.New("V__meta提案需要手续费模式时，txFee参数不能为0或缺失")
 			}
 		}
-	}else {
+	} else {
 		/* 如果没有该参数，下面RootConfig的NoFee字段默认传false，因此需要读取原先配置防止误改
 		 * 举个例子，如果原先配置NoFee是true，但是提案中没有noFee字段
 		 * 执行update时接收到的cfg中noFee就是false，分辨不了提案原意有没有修改
@@ -260,10 +261,10 @@ func (t *Meta) proposalArgsUnmarshal(ctxArgs map[string][]byte) (*ledger.RootCon
 	}
 	return &ledger.RootConfig{
 		// todo 其它参数待添加
-		NominatePercent: percent,
+		NominatePercent:   percent,
 		TransferFeeAmount: txfee,
 		//Award: strconv.FormatInt(award,10),
-		NoFee: nofee,
+		NoFee:    nofee,
 		GasPrice: gas,
 	}, nil
 }
@@ -382,7 +383,7 @@ func (t *Meta) UpdateConfig(cfg *ledger.RootConfig, batch kvdb.Batch) error {
 			return pbErr
 		}
 		tErr := batch.Put([]byte(pb.MetaTablePrefix+ledger.TransferFeeAmountKey), transferFeeAmountBuf)
-		if tErr == nil{
+		if tErr == nil {
 			t.log.Info("V__更新转账手续费transferFeeAmount成功")
 		}
 	}
@@ -417,7 +418,7 @@ func (t *Meta) UpdateConfig(cfg *ledger.RootConfig, batch kvdb.Batch) error {
 	// 无需手续费模式
 	t.Ledger.GenesisBlock.GetConfig().NoFee = cfg.NoFee
 	gas := &protos.GasPrice{} // 字段默认有零值
-	if !cfg.NoFee { // 提案noFee模式为F，表示需要手续费
+	if !cfg.NoFee {           // 提案noFee模式为F，表示需要手续费
 		gas.CpuRate = cfg.GasPrice.CpuRate
 		gas.MemRate = cfg.GasPrice.MemRate
 		gas.DiskRate = cfg.GasPrice.DiskRate

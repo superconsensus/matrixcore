@@ -5,8 +5,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	"github.com/superconsensus-chain/xupercore/lib/timer"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/timer"
 )
 
 type XContext interface {

@@ -3,8 +3,8 @@ package leveldb
 import (
 	pt "path"
 
-	"github.com/superconsensus-chain/xupercore/lib/storage/config"
-	levels3 "github.com/superconsensus-chain/xupercore/lib/storage/s3"
+	"github.com/superconsensus/matrixcore/lib/storage/config"
+	levels3 "github.com/superconsensus/matrixcore/lib/storage/s3"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"

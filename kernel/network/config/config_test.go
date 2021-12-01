@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/kernel/mock"
+	"github.com/superconsensus/matrixcore/kernel/mock"
 )
 
 func TestLoadP2PConf(t *testing.T) {

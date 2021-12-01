@@ -6,9 +6,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract"
 
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
 )
 
 func TestXMCachePutGet(t *testing.T) {

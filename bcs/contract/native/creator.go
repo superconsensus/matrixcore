@@ -5,10 +5,10 @@ import (
 	"net"
 	"os"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pbrpc"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge/pb"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge/pbrpc"
 	"google.golang.org/grpc"
 )
 

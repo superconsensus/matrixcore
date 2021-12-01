@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	_ "github.com/superconsensus-chain/xupercore/kernel/contract/kernel"
-	_ "github.com/superconsensus-chain/xupercore/kernel/contract/manager"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/mock"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	_ "github.com/superconsensus/matrixcore/kernel/contract/kernel"
+	_ "github.com/superconsensus/matrixcore/kernel/contract/manager"
+	"github.com/superconsensus/matrixcore/kernel/contract/mock"
 	log15 "github.com/xuperchain/log15"
 )
 

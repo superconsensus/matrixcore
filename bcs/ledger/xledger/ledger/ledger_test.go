@@ -15,12 +15,12 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state/utxo/txhash"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/kernel/mock"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	_ "github.com/superconsensus-chain/xupercore/lib/storage/kvdb/leveldb"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state/utxo/txhash"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/kernel/mock"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	_ "github.com/superconsensus/matrixcore/lib/storage/kvdb/leveldb"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 const AliceAddress = "TeyyPLpp9L7QAcxHangtcHTu7HUZ6iydY"

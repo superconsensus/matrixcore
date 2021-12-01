@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
-	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
-	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/xpb"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	"github.com/superconsensus-chain/xupercore/lib/utils"
-	"github.com/superconsensus-chain/xupercore/protos"
 	"math/big"
 	"strconv"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	xctx "github.com/superconsensus/matrixcore/kernel/common/xcontext"
+	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/common"
+	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/xpb"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/utils"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 type ValidatorsInfo struct {
@@ -22,8 +23,8 @@ type ValidatorsInfo struct {
 	Miner        string   `json:"miner"`
 	Curterm      int64    `json:"curterm"`
 	ContractInfo string   `json:"contract"`
-	BlockNum int64
-	Period int64
+	BlockNum     int64
+	Period       int64
 }
 
 type LedgerReader interface {
@@ -34,15 +35,15 @@ type LedgerReader interface {
 	// 通过区块高度查询区块信息（GetBlockByHeight）
 	QueryBlockByHeight(height int64, needContent bool) (*xpb.BlockInfo, error)
 	//测试
-	Test(address string)(*protos.CandidateRatio,error)
+	Test(address string) (*protos.CandidateRatio, error)
 	//
-	PledgeVotingRecords(address string)(*protos.PledgeVotingResponse,error)
+	PledgeVotingRecords(address string) (*protos.PledgeVotingResponse, error)
 	//
-	GetVerification(address string)(*protos.VerificationTable,error)
+	GetVerification(address string) (*protos.VerificationTable, error)
 	// 查询tdpos投票分红接口
-	GovernTokenBonusQuery(account string)(*protos.BonusQueryReply, error)
+	GovernTokenBonusQuery(account string) (*protos.BonusQueryReply, error)
 
-	GetSystemStatusExplorer()(*protos.BCStatusExplorer,error)
+	GetSystemStatusExplorer() (*protos.BCStatusExplorer, error)
 }
 
 type ledgerReader struct {
@@ -168,7 +169,7 @@ func (t *ledgerReader) QueryBlockByHeight(height int64, needContent bool) (*xpb.
 	return out, nil
 }
 
-func (t *ledgerReader)Test(address string)(*protos.CandidateRatio,error){
+func (t *ledgerReader) Test(address string) (*protos.CandidateRatio, error) {
 
 	out := &protos.CandidateRatio{}
 	keytable := "ballot_" + address
@@ -177,20 +178,19 @@ func (t *ledgerReader)Test(address string)(*protos.CandidateRatio,error){
 		return nil, DBNotFound
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, out)
-	if parserErr != nil  {
+	if parserErr != nil {
 		return nil, ParseErr
 	}
 
-	return out,nil
+	return out, nil
 }
-func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingResponse,error){
-
+func (t *ledgerReader) PledgeVotingRecords(address string) (*protos.PledgeVotingResponse, error) {
 
 	out := &protos.PledgeVotingResponse{}
 
 	CandidateRatio := &protos.CandidateRatio{}
 	VoteDetails := []*protos.VoteDetailsStatus{}
-	_,error := t.ReadUserBallot(address,CandidateRatio)
+	_, error := t.ReadUserBallot(address, CandidateRatio)
 	if error != nil {
 		return nil, DBNotFound
 	}
@@ -205,44 +205,44 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 	out.UsedAmount = CandidateRatio.Used
 	//获取冻结信息表
 	FrozenAssetsTable := &protos.FrozenAssetsTable{}
-	keytable :=  "amount_" + address
+	keytable := "amount_" + address
 	PbTxBuf, kvErr := t.chainCtx.Ledger.ConfirmedTable.Get([]byte(keytable))
 	if kvErr != nil {
 		return nil, DBNotFound
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, FrozenAssetsTable)
-	if parserErr != nil  {
+	if parserErr != nil {
 		return nil, ParseErr
 	}
 	out.FrozenAssetsTable = FrozenAssetsTable
 
 	//获取冻结中的，也就是申请解冻
 	var thawAmount int64
-	for _ ,data := range FrozenAssetsTable.ThawDetail{
+	for _, data := range FrozenAssetsTable.ThawDetail {
 		value, err := strconv.ParseInt(data.Amount, 10, 64)
 		if err == nil {
 			thawAmount += value
 		}
 	}
-	freeString := strconv.FormatInt(thawAmount,10)
+	freeString := strconv.FormatInt(thawAmount, 10)
 	out.FreezeAmount = freeString
 
 	//获取投票信息
-	for key ,data := range CandidateRatio.MyVoting{
+	for key, data := range CandidateRatio.MyVoting {
 		VoteDetailsStatus := &protos.VoteDetailsStatus{}
 		//获取奖励比
 		userBallot := &protos.CandidateRatio{}
-		_,err := t.ReadUserBallot(key,userBallot)
+		_, err := t.ReadUserBallot(key, userBallot)
 		if err != nil {
 			return out, DBNotFound
 		}
 		VoteDetailsStatus.Ratio = int32(userBallot.Ratio)
 		VoteDetailsStatus.Toaddr = key
-		VoteDetailsStatus.Ballots, _ = strconv.ParseInt(data,10,64)
+		VoteDetailsStatus.Ballots, _ = strconv.ParseInt(data, 10, 64)
 		VoteDetailsStatus.Totalballots = userBallot.BeVotedTotal
 		//投票为0就不显示了
 		if VoteDetailsStatus.Ballots != 0 {
-			VoteDetails = append(VoteDetails,VoteDetailsStatus )
+			VoteDetails = append(VoteDetails, VoteDetailsStatus)
 		}
 
 	}
@@ -252,23 +252,23 @@ func (t *ledgerReader)PledgeVotingRecords(address string)(*protos.PledgeVotingRe
 	return out, nil
 }
 
-func (t *ledgerReader) ReadUserBallot(operator string,table *protos.CandidateRatio) (*protos.CandidateRatio,error) {
+func (t *ledgerReader) ReadUserBallot(operator string, table *protos.CandidateRatio) (*protos.CandidateRatio, error) {
 	keytable := "ballot_" + operator
 	PbTxBuf, kvErr := t.chainCtx.Ledger.ConfirmedTable.Get([]byte(keytable))
 	if kvErr != nil {
 		return nil, DBNotFound
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, table)
-	if parserErr != nil  {
+	if parserErr != nil {
 		return nil, ParseErr
 	}
-	return table,nil
+	return table, nil
 }
 
-func (t *ledgerReader)GetSystemStatusExplorer()(*protos.BCStatusExplorer,error){
+func (t *ledgerReader) GetSystemStatusExplorer() (*protos.BCStatusExplorer, error) {
 	out := &protos.BCStatusExplorer{}
 	//获取全网总知产
-	out.TotalMoney=t.chainCtx.State.GetMeta().UtxoTotal
+	out.TotalMoney = t.chainCtx.State.GetMeta().UtxoTotal
 	//获取当前高度
 	out.Height = t.chainCtx.Ledger.GetMeta().TrunkHeight
 
@@ -282,7 +282,7 @@ func (t *ledgerReader)GetSystemStatusExplorer()(*protos.BCStatusExplorer,error){
 			t.log.Warn("D__解析tdpos_freezes_total_assets失败", "err", parserErr)
 			return out, ParseErr
 		}
-	}else {
+	} else {
 		t.log.Warn("D__解析tdpos_freezes_total_assets为空")
 		return out, DBNotFound
 	}
@@ -291,22 +291,22 @@ func (t *ledgerReader)GetSystemStatusExplorer()(*protos.BCStatusExplorer,error){
 	out.FreeMonry = freetable.Freemonry
 	//计算冻结百分比
 	//fmt.Printf("D__打印FreeMonry %s \n",out.FreeMonry)
-	if out.FreeMonry == ""{
-		return out,nil
+	if out.FreeMonry == "" {
+		return out, nil
 	}
-	free , _ := new(big.Int).SetString(out.FreeMonry, 10)
-	total , _ := new(big.Int).SetString(out.TotalMoney,10)
+	free, _ := new(big.Int).SetString(out.FreeMonry, 10)
+	total, _ := new(big.Int).SetString(out.TotalMoney, 10)
 	// 精度转换
 	total.Div(total, big.NewInt(100000000))
-	free.Mul(free,big.NewInt(10000))
-	ratio := free.Div(free,total).Int64()
+	free.Mul(free, big.NewInt(10000))
+	ratio := free.Div(free, total).Int64()
 	out.Percentage = fmt.Sprintf("%.2f", float64(ratio)/100)
 	out.Percentage += "%"
 
-	return out,nil
+	return out, nil
 }
 
-func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,error){
+func (t *ledgerReader) GetVerification(address string) (*protos.VerificationTable, error) {
 	//fmt.Printf("D__进入GetVerification\n")
 	out := &protos.VerificationTable{}
 
@@ -323,49 +323,49 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 	cycle := 0
 
 	//获取tdpos出块验证人
-	cons , error := t.chainCtx.Consensus.GetConsensusStatus()
-	if error != nil{
+	cons, error := t.chainCtx.Consensus.GetConsensusStatus()
+	if error != nil {
 		return nil, error
 	}
 	validators_info := cons.GetCurrentValidatorsInfo()
 	ValidatorsInfo := &ValidatorsInfo{}
-	jsErr := json.Unmarshal(validators_info,ValidatorsInfo)
+	jsErr := json.Unmarshal(validators_info, ValidatorsInfo)
 	if jsErr != nil {
 		return nil, jsErr
 	}
 	//fmt.Printf("D__打印ValidatorsInfo： %v \n",ValidatorsInfo)
 	//先读取当前一轮验证人的信息
 	//fmt.Println("共识中的所有验证人", ValidatorsInfo.Validators)
-	for _ , data := range ValidatorsInfo.Validators {
+	for _, data := range ValidatorsInfo.Validators {
 		//fmt.Printf("D__打印当前验证人: %s \n",data)
 		CandidateRatio := &protos.CandidateRatio{}
 		VerificationInfo := &protos.VerificationInfo{}
 		// 重点：从candidateRatio表读data（验证人）
-		_, error := t.ReadUserBallot(data,CandidateRatio)
+		_, error := t.ReadUserBallot(data, CandidateRatio)
 		// CandidateRatio tatal_vote:"20000"  0 创世验证人（2w是因为节点1buy了否则输出为空）
 		//fmt.Println("CandidateRatio", CandidateRatio, CandidateRatio.Ratio)
 		//fmt.Println("example",fmt.Sprintf("%v", CandidateRatio) == "") // 购买代币之后就保持false
 		//fmt.Println("ratio",fmt.Sprintf("%v", CandidateRatio.Ratio) == "0")// 提名后false，撤销true
 		//fmt.Println("aa", CandidateRatio.Ratio == 0, CandidateRatio.Ratio)// 同上
 		//fmt.Println("error", error)
-		if error == nil && CandidateRatio.Ratio != 0{
-		// tatal_vote:"20000"
+		if error == nil && CandidateRatio.Ratio != 0 {
+			// tatal_vote:"20000"
 			//Ratio:10
 			//is_Nominate:true
 			//used:"15000"
-		// nominate_details:<key:"TeyyPLpp9L7QAcxHangtcHTu7HUZ6iydY"
+			// nominate_details:<key:"TeyyPLpp9L7QAcxHangtcHTu7HUZ6iydY"
 			// value:<amount:"15000" > >
 			//fmt.Printf("D__打印当前CandidateRatio: %s\n",CandidateRatio)
 			VerificationInfo.Total = CandidateRatio.BeVotedTotal
-			if VerificationInfo.Total == ""{
+			if VerificationInfo.Total == "" {
 				VerificationInfo.Total = "0"
 			}
 			VerificationInfo.Ratio = int32(CandidateRatio.Ratio)
-			value , ok := CandidateRatio.VotingUser[address]
+			value, ok := CandidateRatio.VotingUser[address]
 			if ok {
-				free , _ := new(big.Int).SetString(value, 10)
-				total , _ := new(big.Int).SetString(CandidateRatio.BeVotedTotal,10)
-				free.Mul(free,big.NewInt(10000))
+				free, _ := new(big.Int).SetString(value, 10)
+				total, _ := new(big.Int).SetString(CandidateRatio.BeVotedTotal, 10)
+				free.Mul(free, big.NewInt(10000))
 				if total.Int64() > 0 {
 					ratio := free.Div(free, total).Int64()
 					VerificationInfo.Percentage = fmt.Sprintf("%.2f", float64(ratio)/100)
@@ -375,7 +375,7 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 					VerificationInfo.Percentage = "0%"
 					VerificationInfo.MyTotal = "0"
 				}
-			}else {
+			} else {
 				VerificationInfo.Percentage = "0%"
 				VerificationInfo.MyTotal = "0"
 			}
@@ -383,7 +383,7 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 				out.Verification = make(map[string]*protos.VerificationInfo)
 			}
 			out.Verification[data] = VerificationInfo
-		} else if CandidateRatio.Ratio == 0{
+		} else if CandidateRatio.Ratio == 0 {
 			// 从表中读取不到数据的为默认创世验证人
 			VerificationInfo.Total = "0"
 			VerificationInfo.Percentage = "0%"
@@ -399,10 +399,10 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 	}
 	out.Len = int64(len(out.Verification))
 
-	for _ , data := range ValidatorsInfo.Validators {
+	for _, data := range ValidatorsInfo.Validators {
 		if proposer != data { //判断出块到哪个验证人了
 			cycle++
-		}else {
+		} else {
 			break
 		}
 	}
@@ -416,39 +416,39 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 		parserErr := proto.Unmarshal(PbTxBuf, freetable)
 		if parserErr != nil {
 			t.log.Warn("D__解析tdpos_freezes_total_assets失败", "err", parserErr)
-			return out,nil
+			return out, nil
 		}
-	}else { // 为空就没必要遍历freetable了，直接计算timeLeft
+	} else { // 为空就没必要遍历freetable了，直接计算timeLeft
 		//t.log.Warn("D__解析tdpos_freezes_total_assets为空")
 		//return out,nil
 		goto left
 	}
 	//候选人
-	for _ ,data := range freetable.Candidate{
+	for _, data := range freetable.Candidate {
 		CandidateRatio := &protos.CandidateRatio{}
 		VerificationInfo := &protos.VerificationInfo{}
-		_, error := t.ReadUserBallot(data,CandidateRatio)
+		_, error := t.ReadUserBallot(data, CandidateRatio)
 		if error == nil {
 			VerificationInfo.Total = CandidateRatio.BeVotedTotal
 			if VerificationInfo.Total == "" {
 				VerificationInfo.Total = "0"
 			}
 			VerificationInfo.Ratio = int32(CandidateRatio.Ratio)
-			value , ok := CandidateRatio.VotingUser[address]
+			value, ok := CandidateRatio.VotingUser[address]
 			if ok {
-				free , _ := new(big.Int).SetString(value, 10)
-				total , _ := new(big.Int).SetString(CandidateRatio.BeVotedTotal,10)
-				free.Mul(free,big.NewInt(10000))
+				free, _ := new(big.Int).SetString(value, 10)
+				total, _ := new(big.Int).SetString(CandidateRatio.BeVotedTotal, 10)
+				free.Mul(free, big.NewInt(10000))
 				if total.Int64() > 0 {
 					ratio := free.Div(free, total).Int64()
 					VerificationInfo.Percentage = fmt.Sprintf("%.2f", float64(ratio)/100)
 					VerificationInfo.Percentage += "%"
 					VerificationInfo.MyTotal = value
-				}else {
+				} else {
 					VerificationInfo.Percentage = "0%"
 					VerificationInfo.MyTotal = "0"
 				}
-			}else {
+			} else {
 				VerificationInfo.Percentage = "0%"
 				VerificationInfo.MyTotal = "0"
 			}
@@ -464,7 +464,7 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 	out.LenCandidate = int64(len(out.Candidate))
 	//fmt.Printf("D__验证人获取完毕\n")
 
-	left:
+left:
 	index := out.Len - int64(cycle)
 	// 以每个矿工20个块计算（3s*20=60）
 	//out.TimeLeft = index*60 - curBlockNum*3
@@ -478,7 +478,7 @@ func (t *ledgerReader)GetVerification(address string)(*protos.VerificationTable,
 }
 
 // tdpos投票分红查询RPC接口
-func (t *ledgerReader)GovernTokenBonusQuery(account string)(*protos.BonusQueryReply, error) {
+func (t *ledgerReader) GovernTokenBonusQuery(account string) (*protos.BonusQueryReply, error) {
 	l := t.chainCtx.Ledger
 	bonusData := &protos.AllBonusData{}
 	allBonusDataBytes, err := l.ConfirmedTable.Get([]byte("all_bonus_data"))
@@ -532,7 +532,7 @@ func (t *ledgerReader)GovernTokenBonusQuery(account string)(*protos.BonusQueryRe
 		var resp string
 		if frozen.Int64() != 0 {
 			resp = fmt.Sprintf("分红奖励总量:%v, 其中包含因冻结尚未到账的数量为:%v", allReward, frozen)
-		}else {
+		} else {
 			resp = fmt.Sprintf("分红奖励总量:%v", reward)
 		}
 
@@ -546,7 +546,7 @@ func (t *ledgerReader)GovernTokenBonusQuery(account string)(*protos.BonusQueryRe
 		if err != nil {
 			//fmt.Println("V__获取最新区块失败")
 			t.log.Warn("V__获取最新区块失败")
-		}else {
+		} else {
 			// tdpos共识提名候选人需要质押治理代币的最少量
 			nominateTokenNeed = l.GetTokenRequired(blk.GetHeight())
 			reply.TokenNeed = nominateTokenNeed.String()
@@ -554,7 +554,7 @@ func (t *ledgerReader)GovernTokenBonusQuery(account string)(*protos.BonusQueryRe
 		//fmt.Println("分红总量", reward.Int64())
 
 		return reply, nil
-	}else {
+	} else {
 		return nil, errors.New("V__目前暂无分红信息")
 	}
 }

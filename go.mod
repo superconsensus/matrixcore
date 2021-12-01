@@ -1,4 +1,4 @@
-module github.com/superconsensus-chain/xupercore
+module github.com/superconsensus/matrixcore
 
 go 1.14
 

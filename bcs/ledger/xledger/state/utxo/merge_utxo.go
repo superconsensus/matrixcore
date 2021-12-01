@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
 	"math/big"
 	"math/rand"
 	"sort"
 	"strconv"
 	"time"
 
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/golang/protobuf/proto"
+	"github.com/superconsensus/matrixcore/lib/storage/kvdb"
+
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 func (uv *UtxoVM) SelectUtxosBySize(fromAddr string, needLock, excludeUnconfirmed bool) ([]*protos.TxInput, [][]byte, *big.Int, error) {
@@ -109,14 +110,14 @@ func (uv *UtxoVM) SelectUtxosBySize(fromAddr string, needLock, excludeUnconfirme
 }
 
 // StochasticApproximationSelectUtxos 随机逼近法选择UTXO
-func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNeed *big.Int, needLock, excludeUnconfirmed bool) ([]*protos.TxInput, [][]byte, *big.Int, error)  {
+func (uv *UtxoVM) StochasticApproximationSelectUtxos(fromAddr string, totalNeed *big.Int, needLock, excludeUnconfirmed bool) ([]*protos.TxInput, [][]byte, *big.Int, error) {
 
 	if totalNeed.Cmp(big.NewInt(0)) == 0 {
 		return nil, nil, big.NewInt(0), nil
 	}
 	curLedgerHeight := uv.ledger.GetMeta().TrunkHeight
-	cacheKeys := map[string]bool{}	// 先从cache里找找，不够再从leveldb找,因为leveldb prefix scan比较慢
-	utxoTotal := big.NewInt(0)	// 从cache选中的utxo总金额，如果不足再从数据库中继续选择
+	cacheKeys := map[string]bool{}    // 先从cache里找找，不够再从leveldb找,因为leveldb prefix scan比较慢
+	utxoTotal := big.NewInt(0)        // 从cache选中的utxo总金额，如果不足再从数据库中继续选择
 	willLockKeys := make([][]byte, 0) // 对选中的utxo锁定，如果最后utxo不足，遍历此切片逐一解锁
 	foundEnough := false
 	txInputs := []*protos.TxInput{}
@@ -167,7 +168,7 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 		}
 	}
 	uv.UtxoCache.Unlock()
-	if !foundEnough{
+	if !foundEnough {
 		totalNeed.Sub(totalNeed, utxoTotal) // need需要减去cache已经选中的量，【这一步很关键】
 		addrPrefix := fmt.Sprintf("%s%s_", pb.UTXOTablePrefix, fromAddr)
 		var middleKey []byte
@@ -234,14 +235,14 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 			res := utxoItem.Amount.Cmp(totalNeed)
 			if res < 0 {
 				low = append(low, utxoItem)
-			}else if res > 0 {
+			} else if res > 0 {
 				// 保持只有最接近的那一个
 				if len(larger) == 0 {
 					larger = append(larger, utxoItem)
-				}else if utxoItem.Amount.Cmp(larger[0].Amount) < 0  {
+				} else if utxoItem.Amount.Cmp(larger[0].Amount) < 0 {
 					larger[0] = utxoItem
 				}
-			}else if res == 0 {
+			} else if res == 0 {
 				mid = append(mid, utxoItem)
 			}
 
@@ -282,9 +283,9 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 		}
 
 		// 余额不足：totalLow < totalneed && len(larger) == 0
-		if totalLow.Cmp(totalNeed) < 0 && len(larger) == 0{
+		if totalLow.Cmp(totalNeed) < 0 && len(larger) == 0 {
 			return nil, nil, nil, ErrNoEnoughUTXO // 余额不足
-		}else if totalLow.Cmp(totalNeed) < 0 && len(larger) > 0 {
+		} else if totalLow.Cmp(totalNeed) < 0 && len(larger) > 0 {
 			// 零碎UTXO总和不足发起交易，但是有超过目标值的大面额UTXO则直接使用该大面值UTXO
 			refTxid, offset, err := uv.parseUtxoKeys(string(link[larger[0]]))
 			if err != nil {
@@ -307,37 +308,37 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 			}
 			uv.PrevFoundKeyCache.Add(fromAddr, link[larger[0]])
 			return txInputs, willLockKeys, larger[0].Amount, nil
-		}else if totalLow.Cmp(totalNeed) == 0 {
+		} else if totalLow.Cmp(totalNeed) == 0 {
 			// 零碎的UTXO总和刚好为目标值
 			for _, utxoitem := range low {
 				refTxid, offset, err := uv.parseUtxoKeys(string(link[utxoitem]))
 				if err != nil {
 					return nil, nil, nil, err
 				}
-				if needLock{
+				if needLock {
 					if uv.tryLockKey(link[utxoitem]) { // 注意lock不能在迭代的时候进行
 						willLockKeys = append(willLockKeys, link[utxoitem])
-					}else {
+					} else {
 						uv.log.Debug("V__can not lock the utxo key, conflict", "key", link[utxoitem])
 						//total.Sub(total, utxoitem.Amount)
 						//continue
 					}
 				}
 				txInput := &protos.TxInput{
-					RefTxid: refTxid,
-					RefOffset: int32(offset),
-					FromAddr: []byte(fromAddr),
-					Amount: utxoitem.Amount.Bytes(),
+					RefTxid:      refTxid,
+					RefOffset:    int32(offset),
+					FromAddr:     []byte(fromAddr),
+					Amount:       utxoitem.Amount.Bytes(),
 					FrozenHeight: utxoitem.FrozenHeight,
 				}
 				txInputs = append(txInputs, txInput)
 			}
 			uv.PrevFoundKeyCache.Add(fromAddr, link[low[len(low)-1]])
 			return txInputs, willLockKeys, totalLow, nil
-		}else { // 零碎UTXO总和超过目标值（另分有无超过目标值的大面额UTXO两种情况）
+		} else { // 零碎UTXO总和超过目标值（另分有无超过目标值的大面额UTXO两种情况）
 			// Solve subset sum by stochastic approximation，随机逼近法挑零碎的UTXO组合
 			vfIncluded := make([]bool, 0) // 排除标志符
-			vfBest := make([]bool, 0) // 最优记录标志符
+			vfBest := make([]bool, 0)     // 最优记录标志符
 			for range low {
 				vfIncluded = append(vfIncluded, false)
 				vfBest = append(vfBest, true) // vfBest最初全为true，即先默认需要所有的零碎UTXO来组成最适输入
@@ -352,31 +353,31 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 				for i := range low { // 排除标志符设为false
 					vfIncluded[i] = false
 				}
-				nTotal := big.NewInt(0)  // 总数为0
-				fReachedTarget := false // 找到合适对象设为false
+				nTotal := big.NewInt(0)                                 // 总数为0
+				fReachedTarget := false                                 // 找到合适对象设为false
 				for nPass := 0; nPass < 2 && !fReachedTarget; nPass++ { // 进行两次操作，当两次操作完成或者找到合适对象时退出循环
 					for i := 0; i < len(low); i++ { // 遍历所有小于目标值的对象
 						/*testFlag ++*/
 						// go没有`if (nPass == 0 ? rand() % 2 : !vfIncluded[i])`这样的写法
 						addiction := false
 						if nPass == 0 {
-							if rand.New(rand.NewSource(time.Now().UnixNano())).Int() % 2 != 0 {
+							if rand.New(rand.NewSource(time.Now().UnixNano())).Int()%2 != 0 {
 								addiction = true
 							}
-						}else {
-							addiction = !vfIncluded[i]// && !uv.isLocked(link[low[i]]) // 过滤锁定？
+						} else {
+							addiction = !vfIncluded[i] // && !uv.isLocked(link[low[i]]) // 过滤锁定？
 						}
 						if addiction { // 第一次操作采取随机抽取，第二次操作针对第一次没有随机抽取到的对象操作
 							nTotal.Add(nTotal, low[i].Amount) // 累加值
-							vfIncluded[i] = true // 标识为已使用
-							if nTotal.Cmp(totalNeed) >= 0{ // 如果总数大于目标值
-								fReachedTarget = true // 发现目标
-								if nTotal.Cmp(nBest) < 0{ // 该目标比以往发现的目标好
-									nBest.Set(nTotal) // 替换为最好目标
+							vfIncluded[i] = true              // 标识为已使用
+							if nTotal.Cmp(totalNeed) >= 0 {   // 如果总数大于目标值
+								fReachedTarget = true      // 发现目标
+								if nTotal.Cmp(nBest) < 0 { // 该目标比以往发现的目标好
+									nBest.Set(nTotal)        // 替换为最好目标
 									copy(vfBest, vfIncluded) // 深拷贝，保存相应的对象
 								}
 								nTotal.Sub(nTotal, low[i].Amount) // 放弃该对象，寻找下一对象
-								vfIncluded[i] = false // 该对象值为false，便于第二次随机抽取使用
+								vfIncluded[i] = false             // 该对象值为false，便于第二次随机抽取使用
 							}
 						}
 					}
@@ -401,22 +402,22 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 					FrozenHeight: larger[0].FrozenHeight,
 				}
 				txInputs = append(txInputs, txInput)
-				if needLock{ // 锁定
+				if needLock { // 锁定
 					if uv.tryLockKey(link[larger[0]]) { // 注意lock不能在迭代的时候进行
 						willLockKeys = append(willLockKeys, link[larger[0]])
-					}else {
+					} else {
 						uv.log.Debug("V__can not lock the utxo key, conflict", "key", link[larger[0]])
 					}
 				}
 				uv.PrevFoundKeyCache.Add(fromAddr, link[larger[0]])
 				// larger[0].Amount不需要加上在cache中已经累加的utxoTotal
 				// totalNeed <= larger[0].Amount < nBest+utxoTotal
-				return txInputs, willLockKeys, larger[0].Amount/*.Add(larger[0].Amount, utxoTotal)*/, nil
-			}else { // larger存在但其UTXO比随机挑出的零碎UTXO组合差，使用零碎组合
+				return txInputs, willLockKeys, larger[0].Amount /*.Add(larger[0].Amount, utxoTotal)*/, nil
+			} else { // larger存在但其UTXO比随机挑出的零碎UTXO组合差，使用零碎组合
 				lastI := 0
 				for i := 0; i < len(low); i++ {
 					// 循环候选对象构建交易输入
-					if vfBest[i]{ // 取出合适对象
+					if vfBest[i] { // 取出合适对象
 						refTxid, offset, err := uv.parseUtxoKeys(string(link[low[i]]))
 						if err != nil {
 							return nil, nil, nil, err
@@ -429,10 +430,10 @@ func (uv *UtxoVM) StochasticApproximationSelectUtxos (fromAddr string,  totalNee
 							FrozenHeight: low[i].FrozenHeight,
 						}
 						txInputs = append(txInputs, txInput)
-						if needLock{ // 锁定
+						if needLock { // 锁定
 							if uv.tryLockKey(link[low[i]]) {
 								willLockKeys = append(willLockKeys, link[low[i]])
-							}else {
+							} else {
 								uv.log.Debug("V__can not lock the utxo key, conflict", "key", link[low[i]])
 							}
 						}

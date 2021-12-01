@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	cryptoClinet "github.com/superconsensus-chain/xupercore/lib/crypto/client/base"
+	cryptoClinet "github.com/superconsensus/matrixcore/lib/crypto/client/base"
 )
 
 type Address struct {

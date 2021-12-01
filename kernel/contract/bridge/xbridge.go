@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/lib/logs"
 
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 // XBridge 用于注册用户虚拟机以及向Xchain Core注册可被识别的vm.VirtualMachine

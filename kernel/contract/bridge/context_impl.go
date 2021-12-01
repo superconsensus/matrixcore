@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract"
 )
 
 const (

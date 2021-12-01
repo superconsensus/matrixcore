@@ -1,6 +1,6 @@
 package contract
 
-import "github.com/superconsensus-chain/xupercore/protos"
+import "github.com/superconsensus/matrixcore/protos"
 
 const (
 	maxResourceLimit = 0xFFFFFFFF

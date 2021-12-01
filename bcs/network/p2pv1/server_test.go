@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	xctx "github.com/superconsensus/matrixcore/kernel/common/xcontext"
 
-	"github.com/superconsensus-chain/xupercore/kernel/mock"
-	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
-	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/mock"
+	nctx "github.com/superconsensus/matrixcore/kernel/network/context"
+	"github.com/superconsensus/matrixcore/kernel/network/p2p"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 func Handler(ctx xctx.XContext, msg *pb.XuperMessage) (*pb.XuperMessage, error) {

@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	common "github.com/superconsensus-chain/xupercore/kernel/consensus/base/common"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
+	common "github.com/superconsensus/matrixcore/kernel/consensus/base/common"
+	"github.com/superconsensus/matrixcore/kernel/contract/proposal/utils"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract"
 )
 
 // 本文件实现tdpos的原Run方法，现全部移至三代合约
@@ -54,8 +54,8 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 		"from":      []byte(contractCtx.Initiator()),
 		"amount":    []byte(fmt.Sprintf("%d", amount)),
 		"lock_type": []byte(utils.GovernTokenTypeTDPOS),
-	//	"ratio" : []byte(fmt.Sprintf("%d",ratio)),
-	//	"to": []byte(candidateName),
+		//	"ratio" : []byte(fmt.Sprintf("%d",ratio)),
+		//	"to": []byte(candidateName),
 	}
 	_, err = contractCtx.Call("xkernel", utils.GovernTokenKernelContract, "Lock", tokenArgs)
 	if err != nil {
@@ -224,7 +224,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	//fmt.Println("rset", string(rwSet.RSet[2].PureData.GetKey()), string(rwSet.RSet[2].PureData.GetValue()))
 	//&& !bytes.Equal(rwSet.RSet[0].PureData.GetValue(), rwSet.WSet[0].GetValue())
 	// 兼容旧版本已经上链的交易，用高度过滤本判断，如果链从零开始运行则可忽略高度条件
-	if ( rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil ) /*&& height > 1920000*/{
+	if rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil /*&& height > 1920000*/ {
 		// Set[0] --> nominate table
 		// Set[1] --> revoke table add info
 		// Set[2] --> 被撤销提名的用户治理代币balance
@@ -498,7 +498,7 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 		}
 		number := tempVoteValue[contractCtx.Initiator()] // 从读集中获取的最新票数
 		tempVoteValue[contractCtx.Initiator()] = number - amount
-		if number - amount < 0 {
+		if number-amount < 0 {
 			tp.log.Warn("V__撤销的票数不能低于对目标所投的票数", "所投票数", number, "撤销数量", amount)
 			return common.NewContractErrResponse(common.StatusErr, "撤销的票数不能低于对目标所投的票数"), errors.New("撤销的票数不能低于对目标所投的票数")
 		}
@@ -561,17 +561,17 @@ func (tp *tdposConsensus) checkArgs(txArgs map[string][]byte) (string, int64, er
 }
 
 //检查分红比
-func (tp *tdposConsensus) checkRatio(txArgs map[string][]byte)(int64,error){
+func (tp *tdposConsensus) checkRatio(txArgs map[string][]byte) (int64, error) {
 	ratioArg := txArgs["ratio"]
 	ratioName := string(ratioArg)
-	ratio ,error := strconv.ParseInt(ratioName,10,64)
+	ratio, error := strconv.ParseInt(ratioName, 10, 64)
 	if error != nil {
-		return 0,error
+		return 0, error
 	}
-	if ratio<0 || ratio>100{
+	if ratio < 0 || ratio > 100 {
 		return 0, errors.New("D__分红比例必须在0-100之间")
 	}
-	return ratio , nil
+	return ratio, nil
 }
 
 type nominateValue map[string]map[string]int64

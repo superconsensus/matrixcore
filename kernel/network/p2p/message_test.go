@@ -3,7 +3,7 @@ package p2p
 import (
 	"testing"
 
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 func TestMessage(t *testing.T) {

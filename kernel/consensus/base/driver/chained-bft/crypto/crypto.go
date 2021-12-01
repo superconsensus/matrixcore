@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	pb "github.com/superconsensus-chain/xupercore/kernel/consensus/base/driver/chained-bft/pb"
-	cctx "github.com/superconsensus-chain/xupercore/kernel/consensus/context"
+	pb "github.com/superconsensus/matrixcore/kernel/consensus/base/driver/chained-bft/pb"
+	cctx "github.com/superconsensus/matrixcore/kernel/consensus/context"
 	"github.com/xuperchain/crypto/core/hash"
 )
 

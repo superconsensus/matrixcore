@@ -2,17 +2,17 @@ package miner
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/tx"
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/protos"
 	"math"
 	"math/big"
 	"strconv"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/tx"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
-
-func (t *Miner) GenerateVoteAward(address string ,remainAward *big.Int) ([]*lpb.Transaction, error) {
+func (t *Miner) GenerateVoteAward(address string, remainAward *big.Int) ([]*lpb.Transaction, error) {
 	//Voters := make(map[string]*big.Int)
 	//奖励交易
 	txs := make([]*lpb.Transaction, 0)
@@ -21,21 +21,21 @@ func (t *Miner) GenerateVoteAward(address string ,remainAward *big.Int) ([]*lpb.
 	table := &protos.CacheVoteCandidate{}
 	PbTxBuf, kvErr := t.ctx.Ledger.ConfirmedTable.Get([]byte(key))
 	if kvErr != nil {
-		return nil , kvErr
+		return nil, kvErr
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, table)
-	if parserErr != nil{
+	if parserErr != nil {
 		t.log.Warn("D__分配奖励读CacheVoteCandidate表错误")
-		return nil , kvErr
+		return nil, kvErr
 	}
 
 	//遍历投票表
 	totalAmount := big.NewInt(0)
-	totalAmount.SetString(table.TotalVote,10)
-	for key ,data := range table.VotingUser{
+	totalAmount.SetString(table.TotalVote, 10)
+	for key, data := range table.VotingUser {
 		r := new(big.Rat)
 		newdata := big.NewInt(0)
-		newdata.SetString(data,10)
+		newdata.SetString(data, 10)
 		r.SetString(fmt.Sprintf("%d/%d", newdata.Int64(), totalAmount.Int64()))
 		ratio, err := strconv.ParseFloat(r.FloatString(16), 10)
 		if err != nil {
@@ -54,7 +54,7 @@ func (t *Miner) GenerateVoteAward(address string ,remainAward *big.Int) ([]*lpb.
 		voteawardtx, err := tx.GenerateVoteAwardTx([]byte(key), voteAward.String(), []byte{'1'})
 		if err != nil {
 			t.log.Warn("D__[Vote_Award] fail to generate vote award tx", "err", err)
-			fmt.Printf("D__投票异常，voteAward \n,",voteawardtx)
+			fmt.Printf("D__投票异常，voteAward \n,", voteawardtx)
 			return nil, err
 		}
 		txs = append(txs, voteawardtx)
@@ -62,7 +62,7 @@ func (t *Miner) GenerateVoteAward(address string ,remainAward *big.Int) ([]*lpb.
 	return txs, nil
 }
 
-func (t *Miner) AssignRewards (address string,blockAward *big.Int)(*big.Int){
+func (t *Miner) AssignRewards(address string, blockAward *big.Int) *big.Int {
 	award := big.NewInt(0)
 	//读缓存表
 	key := "cache_" + address
@@ -72,15 +72,15 @@ func (t *Miner) AssignRewards (address string,blockAward *big.Int)(*big.Int){
 		return award
 	}
 	parserErr := proto.Unmarshal(PbTxBuf, table)
-	if table.TotalVote == "0" || table.TotalVote == ""{
+	if table.TotalVote == "0" || table.TotalVote == "" {
 		return award
 	}
-	if parserErr != nil{
+	if parserErr != nil {
 		t.log.Warn("D__分配奖励读UserReward表错误")
 		return award
 	}
 	ratData := table.Ratio
-	award.Mul(blockAward,big.NewInt(ratData)).Div(award,big.NewInt(100))
+	award.Mul(blockAward, big.NewInt(ratData)).Div(award, big.NewInt(100))
 	return award
 }
 

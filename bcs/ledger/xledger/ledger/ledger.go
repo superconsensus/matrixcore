@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"math/big"
 	"path/filepath"
 	"runtime"
@@ -15,18 +14,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/def"
-	pb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/lib/cache"
-	cryptoClient "github.com/superconsensus-chain/xupercore/lib/crypto/client"
-	cryptoBase "github.com/superconsensus-chain/xupercore/lib/crypto/client/base"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	"github.com/superconsensus-chain/xupercore/lib/metrics"
-	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
-	"github.com/superconsensus-chain/xupercore/lib/timer"
-	"github.com/superconsensus-chain/xupercore/lib/utils"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/def"
+	pb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/lib/cache"
+	cryptoClient "github.com/superconsensus/matrixcore/lib/crypto/client"
+	cryptoBase "github.com/superconsensus/matrixcore/lib/crypto/client/base"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/metrics"
+	"github.com/superconsensus/matrixcore/lib/storage/kvdb"
+	"github.com/superconsensus/matrixcore/lib/timer"
+	"github.com/superconsensus/matrixcore/lib/utils"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 var (
@@ -70,7 +71,7 @@ const (
 	GasPriceKey                = "GasPrice"
 	GroupChainContractKey      = "GroupChainContract"
 	TransferFeeAmountKey       = "TransferFeeAmount"
-	AwardKey = "Award"
+	AwardKey                   = "Award"
 )
 
 // Ledger define data structure of Ledger
@@ -726,7 +727,7 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 	cbNum := 0
 	oldBlockCache := map[string]*pb.InternalBlock{}
 	for _, tx := range realTransactions {
-		if tx.VoteCoinbase && !bytes.Equal(tx.Desc, []byte("1")){ // 兼容旧版分红奖励
+		if tx.VoteCoinbase && !bytes.Equal(tx.Desc, []byte("1")) { // 兼容旧版分红奖励
 			// 池子部分更新，每票奖励是在矿工出块时修改的，在这里将修改结果写入
 			// 同时因为矿工打包块的时候已经将【本交易置顶】，所以可以保证更新了每票奖励之后
 			//（分红 = 每票奖励 * 票数 - 债务）间接更新了投票者的分红
@@ -735,7 +736,7 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 			pe := proto.Unmarshal(tx.Desc, bonusData)
 			if pe != nil {
 				l.xlog.Warn("V__解析分红奖励数据出错", pe)
-			}/*else {
+			} /*else {
 				fmt.Println("分红池", bonusData.GetBonusPools())
 				fmt.Println("提现队列", bonusData.GetDiscountQueue())
 			}*/
@@ -942,7 +943,7 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 		if reward.Cmp(takeBonus) < 0 {
 			fmt.Println("V__可提现数量不足，交易无效", hex.EncodeToString(tx.Txid), "可提现数量", reward.Int64(), "本次提现数量", takeBonus.Int64())
 			l.xlog.Error("V__错误的交易，可提现数量不足", "交易id: ", hex.EncodeToString(tx.Txid), "可提现数量", reward.Int64(), "本次提现数量", takeBonus.Int64())
-			return/* fmt.Errorf("错误的交易，可提现数量不足")*/
+			return /* fmt.Errorf("错误的交易，可提现数量不足")*/
 		}
 
 		// height高度下是否已存在提现数据
@@ -951,7 +952,7 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 			//fmt.Println("height高度下没有提现数据", takeBonus.String())
 			// height高度下没有提现数据，newestVoter用户提现discount数量的分红
 			userDiscount[newestVoter] = takeBonus.String()
-		}else {
+		} else {
 			// height高度下已存在提现数据
 			originAmount, repeatOK := queue.UserDiscount[newestVoter]
 			if repeatOK {
@@ -963,7 +964,7 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 				//fmt.Println("V__height高度下同一个用户多次提现", oldAmount.String())
 				// newestVoter用户提现oldAmount数量的分红
 				userDiscount[newestVoter] = oldAmount.String()
-			}else {
+			} else {
 				// 不同用户提现，userDiscount先存旧数据
 				userDiscount = allBonusData.DiscountQueue[targetHeight.Int64()].UserDiscount
 				//fmt.Println("V__height高度下用户新提现", takeBonus.String())
@@ -991,7 +992,7 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 					voter.Debt = oldDebt.Add(oldDebt, takeBonus).String()
 					pools[miner].Voters[initiator] = voter
 					break
-				}else {
+				} else {
 					// 提现额大于单个池子奖励
 					voter.Debt = oldDebt.Add(oldDebt, votes).String()
 					takeBonus.Sub(takeBonus, votes)
@@ -1006,7 +1007,7 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 		if ok != nil {
 			l.xlog.Warn("V__分红数据更新失败", ok)
 		}
-	}else {
+	} else {
 		l.xlog.Warn("V__读取分红数据出错", getErr)
 		return
 	}
@@ -1080,7 +1081,7 @@ func (l *Ledger) WriteThawTable(batch kvdb.Batch, cliAmount string, user string,
 				table.ThawDetail = make(map[string]*protos.FrozenDetails)
 			}
 			table.ThawDetail[v.(string)] = tabledata
-		}else {
+		} else {
 			l.xlog.Error("出售治理代币的交易id错误\n")
 			return errors.New("输入交易id错误\n")
 		}
@@ -1117,7 +1118,7 @@ func (l *Ledger) WriteThawTable(batch kvdb.Batch, cliAmount string, user string,
 		Address: user,
 		Amount:  amount.String(),
 		//Height:  l.GetMeta().TrunkHeight + 1 + int64(10*24*3600/3*math.Pow10(0)),
-		Height:  l.GetMeta().TrunkHeight + 1 + 288000,
+		Height: l.GetMeta().TrunkHeight + 1 + 288000,
 	}
 	NodeDetails := &protos.NodeDetails{}
 	if NodeTable.NodeDetails[NodeDetail.Height] == nil {
@@ -1156,7 +1157,7 @@ func (l *Ledger) WriteThawTable(batch kvdb.Batch, cliAmount string, user string,
 	oldAmount := big.NewInt(0)
 	oldAmount.SetString(CandidateTable.TatalVote, 10)
 	CandidateTable.TatalVote = oldAmount.Sub(oldAmount, amount).String()
-	fmt.Printf("D__用户%s解冻%s 资产 \n",user,amount)
+	fmt.Printf("D__用户%s解冻%s 资产 \n", user, amount)
 	//开始写治理投票表
 	pbTxBuf, err = proto.Marshal(CandidateTable)
 	if err != nil {
@@ -1461,7 +1462,7 @@ func (l *Ledger) WriteReCandidateTable(batch kvdb.Batch, user string, Args map[s
 }
 
 // 提案最少质押量
-func (l *Ledger) GetTokenRequired(height int64) *big.Int{
+func (l *Ledger) GetTokenRequired(height int64) *big.Int {
 	// base底数为1.1
 	base := decimal.NewFromFloat(1.1)
 	period := decimal.NewFromInt(height / l.GenesisBlock.config.AwardDecay.HeightGap)
@@ -1482,7 +1483,7 @@ func (l *Ledger) GetTokenRequired(height int64) *big.Int{
 	if percent == 0 {
 		percent = 100000 // 默认十万分之一
 	}
-	preTotal = preTotal.Mul(base).Div(decimal.NewFromInt(percent*100000000))
+	preTotal = preTotal.Mul(base).Div(decimal.NewFromInt(percent * 100000000))
 	// total小数点后四舍五入取整
 	preTotal = preTotal.Round(0)
 	//fmt.Println("提名质押百分比", percent, "本次质押需要", preTotal)
@@ -1627,7 +1628,7 @@ func (l *Ledger) WriteFreezeTable(batch kvdb.Batch, amount string, user string, 
 	}
 	flag := false
 	chainAmount := big.NewInt(0)
-	for _, data := range tx.TxOutputs{
+	for _, data := range tx.TxOutputs {
 		if string(data.ToAddr) == "testa" {
 			chainAmount.SetBytes(data.Amount)
 			flag = true
@@ -1642,7 +1643,7 @@ func (l *Ledger) WriteFreezeTable(batch kvdb.Batch, amount string, user string, 
 	chainAmount.Div(chainAmount, big.NewInt(100000000))
 
 	cliAmount := big.NewInt(0)
-	if _, ok := cliAmount.SetString(amount, 10); ok == false{
+	if _, ok := cliAmount.SetString(amount, 10); ok == false {
 		l.xlog.Error("购买治理代币amount类型错误，非string\n")
 		return errors.New("购买治理代币amount类型错误，检查是否为string\n")
 	}

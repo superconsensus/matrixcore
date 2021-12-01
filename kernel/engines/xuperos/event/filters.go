@@ -3,8 +3,8 @@ package event
 import (
 	"regexp"
 
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
-	"github.com/superconsensus-chain/xupercore/protos"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 type txFilterFunc func(*blockFilter, *lpb.Transaction) bool

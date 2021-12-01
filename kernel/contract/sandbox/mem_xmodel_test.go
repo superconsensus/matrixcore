@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
 )
 
 func TestXModelIterator(t *testing.T) {

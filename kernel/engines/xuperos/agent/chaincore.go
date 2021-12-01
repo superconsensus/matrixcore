@@ -1,10 +1,10 @@
 package agent
 
 import (
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
-	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
-	"github.com/superconsensus-chain/xupercore/kernel/ledger"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge/pb"
+	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/common"
+	"github.com/superconsensus/matrixcore/kernel/ledger"
+	"github.com/superconsensus/matrixcore/lib/logs"
 )
 
 type ChainCoreAgent struct {

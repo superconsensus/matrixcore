@@ -5,16 +5,16 @@ import (
 	"io"
 	"sync"
 
-	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
+	xctx "github.com/superconsensus/matrixcore/kernel/common/xcontext"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
-	"github.com/superconsensus-chain/xupercore/kernel/network/config"
-	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
-	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
-	"github.com/superconsensus-chain/xupercore/lib/logs"
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/network/config"
+	nctx "github.com/superconsensus/matrixcore/kernel/network/context"
+	"github.com/superconsensus/matrixcore/kernel/network/p2p"
+	"github.com/superconsensus/matrixcore/lib/logs"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 type Conn struct {

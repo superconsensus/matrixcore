@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge/pb"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 type kcontextImpl struct {

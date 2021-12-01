@@ -7,7 +7,7 @@
 package xldgpb
 
 import (
-	protos "github.com/superconsensus-chain/xupercore/protos"
+	protos "github.com/superconsensus/matrixcore/protos"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

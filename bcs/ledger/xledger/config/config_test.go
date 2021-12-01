@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/lib/utils"
+	"github.com/superconsensus/matrixcore/lib/utils"
 )
 
 func TestLoadLedgerConf(t *testing.T) {

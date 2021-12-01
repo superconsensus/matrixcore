@@ -7,8 +7,8 @@ import (
 	osexec "os/exec"
 	"path/filepath"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge"
 	"github.com/xuperchain/xvm/compile"
 	"github.com/xuperchain/xvm/exec"
 	"github.com/xuperchain/xvm/runtime/emscripten"

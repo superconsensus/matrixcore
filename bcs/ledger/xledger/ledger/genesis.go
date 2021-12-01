@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/superconsensus-chain/xupercore/lib/cache"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/lib/cache"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 // awardCacheSize system award cache, in avoid of double computing
@@ -55,8 +55,8 @@ type RootConfig struct {
 	IrreversibleSlideWindow string `json:"irreversibleslidewindow"`
 	// GroupChainContract
 	GroupChainContract InvokeRequest `json:"group_chain_contract"`
-	TransferFeeAmount        int64 `json:"transfer_fee_amount"` //转账手续费
-	NominatePercent	int64 `json:"nominate_percent"` // tdpos共识提名候选人时需要质押全网代币总量的最小比例
+	TransferFeeAmount  int64         `json:"transfer_fee_amount"` //转账手续费
+	NominatePercent    int64         `json:"nominate_percent"`    // tdpos共识提名候选人时需要质押全网代币总量的最小比例
 }
 
 // GasPrice define gas rate for utxo

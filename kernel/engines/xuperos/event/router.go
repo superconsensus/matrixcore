@@ -3,9 +3,9 @@ package event
 import (
 	"fmt"
 
-	"github.com/superconsensus-chain/xupercore/kernel/engines/xuperos/common"
+	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/common"
 
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 // Router distribute events according to the event type and filter

@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	//contractcmd "github.com/superconsensus-chain/xupercore/example/xchain/cmd/client/cmd/contract"
-	"github.com/superconsensus-chain/xupercore/example/xchain/cmd/client/common/global"
-	xdef "github.com/superconsensus-chain/xupercore/example/xchain/common/def"
+	//contractcmd "github.com/superconsensus/matrixcore/example/xchain/cmd/client/cmd/contract"
+	"github.com/superconsensus/matrixcore/example/xchain/cmd/client/common/global"
+	xdef "github.com/superconsensus/matrixcore/example/xchain/common/def"
 
 	"github.com/spf13/cobra"
 )

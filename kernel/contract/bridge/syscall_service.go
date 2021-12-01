@@ -10,10 +10,10 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge/pb"
+	"github.com/superconsensus/matrixcore/kernel/contract/proposal/utils"
+	"github.com/superconsensus/matrixcore/protos"
 )
 
 var (

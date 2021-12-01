@@ -8,10 +8,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	prom "github.com/prometheus/client_golang/prometheus"
 
-	xctx "github.com/superconsensus-chain/xupercore/kernel/common/xcontext"
-	"github.com/superconsensus-chain/xupercore/kernel/network/p2p"
-	"github.com/superconsensus-chain/xupercore/lib/metrics"
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	xctx "github.com/superconsensus/matrixcore/kernel/common/xcontext"
+	"github.com/superconsensus/matrixcore/kernel/network/p2p"
+	"github.com/superconsensus/matrixcore/lib/metrics"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 var (

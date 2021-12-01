@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	"github.com/superconsensus-chain/xupercore/kernel/mock"
-	"github.com/superconsensus-chain/xupercore/lib/crypto/client"
-	_ "github.com/superconsensus-chain/xupercore/lib/storage/kvdb/leveldb"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	"github.com/superconsensus/matrixcore/kernel/mock"
+	"github.com/superconsensus/matrixcore/lib/crypto/client"
+	_ "github.com/superconsensus/matrixcore/lib/storage/kvdb/leveldb"
 )
 
 func TestNewNetCtx(t *testing.T) {

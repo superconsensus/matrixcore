@@ -14,11 +14,11 @@ import (
 	"github.com/hyperledger/burrow/execution/evm/abi"
 	"github.com/hyperledger/burrow/execution/exec"
 
-	xabi "github.com/superconsensus-chain/xupercore/bcs/contract/evm/abi"
-	"github.com/superconsensus-chain/xupercore/kernel/contract"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge"
-	"github.com/superconsensus-chain/xupercore/kernel/contract/bridge/pb"
-	xchainpb "github.com/superconsensus-chain/xupercore/protos"
+	xabi "github.com/superconsensus/matrixcore/bcs/contract/evm/abi"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge"
+	"github.com/superconsensus/matrixcore/kernel/contract/bridge/pb"
+	xchainpb "github.com/superconsensus/matrixcore/protos"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/superconsensus-chain/xupercore/lib/utils"
+	"github.com/superconsensus/matrixcore/lib/utils"
 )
 
 // Set environment variable:X_ROOT_PATH

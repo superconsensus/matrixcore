@@ -4,13 +4,13 @@ import (
 	"errors"
 	"hash/crc32"
 
-	"github.com/superconsensus-chain/xupercore/kernel/network/def"
+	"github.com/superconsensus/matrixcore/kernel/network/def"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/snappy"
 
-	"github.com/superconsensus-chain/xupercore/lib/utils"
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/lib/utils"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 var (

@@ -1,7 +1,7 @@
 package contract
 
 import (
-	"github.com/superconsensus-chain/xupercore/lib/logs"
+	"github.com/superconsensus/matrixcore/lib/logs"
 )
 
 // NativeConfig contains the two above config

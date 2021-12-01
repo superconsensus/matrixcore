@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/lib/storage/kvdb"
+	"github.com/superconsensus/matrixcore/lib/storage/kvdb"
 )
 
 const (

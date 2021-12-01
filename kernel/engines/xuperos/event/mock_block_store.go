@@ -4,9 +4,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/ledger"
-	"github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/state"
-	lpb "github.com/superconsensus-chain/xupercore/bcs/ledger/xledger/xldgpb"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/ledger"
+	"github.com/superconsensus/matrixcore/bcs/ledger/xledger/state"
+	lpb "github.com/superconsensus/matrixcore/bcs/ledger/xledger/xldgpb"
 )
 
 type mockBlockStore struct {

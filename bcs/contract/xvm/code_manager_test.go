@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/protos"
 	"github.com/xuperchain/xvm/exec"
 )
 

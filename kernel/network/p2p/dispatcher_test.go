@@ -3,9 +3,9 @@ package p2p
 import (
 	"testing"
 
-	"github.com/superconsensus-chain/xupercore/kernel/mock"
-	nctx "github.com/superconsensus-chain/xupercore/kernel/network/context"
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	"github.com/superconsensus/matrixcore/kernel/mock"
+	nctx "github.com/superconsensus/matrixcore/kernel/network/context"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 type dispatcherCase struct {

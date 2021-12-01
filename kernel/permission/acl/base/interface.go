@@ -1,7 +1,7 @@
 package base
 
 import (
-	pb "github.com/superconsensus-chain/xupercore/protos"
+	pb "github.com/superconsensus/matrixcore/protos"
 )
 
 type AclManager interface {

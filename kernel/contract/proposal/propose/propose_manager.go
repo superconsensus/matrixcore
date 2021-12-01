@@ -3,9 +3,10 @@ package propose
 import (
 	"encoding/json"
 	"fmt"
-	pb "github.com/superconsensus-chain/xupercore/protos"
 
-	"github.com/superconsensus-chain/xupercore/kernel/contract/proposal/utils"
+	pb "github.com/superconsensus/matrixcore/protos"
+
+	"github.com/superconsensus/matrixcore/kernel/contract/proposal/utils"
 )
 
 // Manager manages all timer releated data, providing read/write interface

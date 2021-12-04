@@ -614,6 +614,11 @@ func (t *Miner) packBlock(ctx xctx.XContext, height int64,
 		ctx.GetLog().Warn("D__解冻出块时查询解冻信息失败\n", "err", err)
 		//return nil, err
 	}
+	bonusTx, err := t.GetBonusTx(height, ctx)
+	if err != nil {
+		ctx.GetLog().Warn("V__分红到账奖励获取失败\n", "err", err)
+		//return nil, err
+	}
 
 	// 3.获取矿工奖励交易
 	var (
@@ -641,6 +646,9 @@ func (t *Miner) packBlock(ctx xctx.XContext, height int64,
 	}
 	if len(thawTx) > 0 {
 		txList = append(txList, thawTx...)
+	}
+	if len(bonusTx) > 0 {
+		txList = append(txList, bonusTx...)
 	}
 
 	//投票奖励分配
@@ -787,7 +795,43 @@ func (t *Miner) getAwardTx(height int64, flag bool) (*lpb.Transaction, *big.Int,
 }
 
 //构建解冻交易
-func (t *Miner) GetThawTx(height int64, ctx xctx.XContext) ([]*lpb.Transaction, error) {
+func (t * Miner)GetThawTx(height int64,ctx xctx.XContext)([]*lpb.Transaction, error) {
+	//先获取节点冻结信息
+	txs := []*lpb.Transaction{}
+	keytable := "nodeinfo_" + "tdos_thaw_total_assets"
+	PbTxBuf, kvErr := t.ctx.Ledger.ConfirmedTable.Get([]byte(keytable))
+	NodeTable := &protos.NodeTable{}
+	if kvErr != nil {
+		//fmt.Printf("D__节点中不含解冻信息\n")
+		return nil, nil
+	}
+	parserErr := proto.Unmarshal(PbTxBuf, NodeTable)
+	if parserErr != nil {
+		return nil , parserErr
+	}
+	batch := t.ctx.Ledger.ConfirmBatch
+	//batch.Reset()
+	value, ok := NodeTable.NodeDetails[height]
+	if ok {
+		for _, data := range value.NodeDetail{
+			Address := data.Address
+			//反转转账,只是凭空构建，交易不记录总资产
+			tx, error := t.ctx.State.ReverseTx(Address,batch,data.Amount)
+			if error != nil {
+				ctx.GetLog().Warn("D__反转转账构造交易失败","error",error)
+				return nil, error
+			}
+			txs = append(txs, tx)
+		}
+	}else {
+		return nil, nil
+	}
+
+	//fmt.Printf("D__解冻交易拼接成功\n")
+	return txs, nil
+}
+// 分红到账奖励，不需要clear到账时顺手delete了
+func (t *Miner) GetBonusTx(height int64, ctx xctx.XContext) ([]*lpb.Transaction, error) {
 	//先获取节点冻结信息
 	txs := []*lpb.Transaction{}
 	// 提现分红奖励生成
@@ -804,7 +848,7 @@ func (t *Miner) GetThawTx(height int64, ctx xctx.XContext) ([]*lpb.Transaction, 
 					if e != nil {
 						t.log.Error("V__构造提现分红奖励交易失败", e)
 						txs = append(txs[:0])
-						goto node
+						return nil, e // err
 					}
 					//delete(queue[height].UserDiscount, user)
 					txs = append(txs, bonusTx)
@@ -821,38 +865,6 @@ func (t *Miner) GetThawTx(height int64, ctx xctx.XContext) ([]*lpb.Transaction, 
 			}
 		}
 	}
-node:
-	keytable := "nodeinfo_" + "tdos_thaw_total_assets"
-	PbTxBuf, kvErr := t.ctx.Ledger.ConfirmedTable.Get([]byte(keytable))
-	NodeTable := &protos.NodeTable{}
-	if kvErr != nil {
-		//fmt.Printf("D__节点中不含解冻信息\n")
-		return txs, nil
-	}
-	parserErr := proto.Unmarshal(PbTxBuf, NodeTable)
-	if parserErr != nil {
-		fmt.Printf("D__解析NodeTable错误，错误码： %s \n", parserErr)
-		return txs, parserErr
-	}
-	batch := t.ctx.Ledger.ConfirmBatch
-	//batch.Reset()
-	value, ok := NodeTable.NodeDetails[height]
-	if ok {
-		for _, data := range value.NodeDetail {
-			Address := data.Address
-			//反转转账,只是凭空构建，交易不记录总资产
-			tx, error := t.ctx.State.ReverseTx(Address, batch, data.Amount)
-			if error != nil {
-				ctx.GetLog().Warn("D__反转转账构造交易失败", "error", error)
-				return txs, error
-			}
-			txs = append(txs, tx)
-		}
-	} else {
-		return txs, nil
-	}
-
-	//fmt.Printf("D__解冻交易拼接成功\n")
 	return txs, nil
 }
 

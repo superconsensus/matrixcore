@@ -1262,8 +1262,9 @@ func (t *State) ReverseTx(FromAddr string, batch kvdb.Batch, Amount string) (*pb
 }
 
 func (t *State) doTxInternal(tx *pb.Transaction, batch kvdb.Batch, cacheFiller *utxo.CacheFiller) error {
+	t.utxo.CleanBatchCache(batch) // 根据 batch 清理缓存。
 	if tx.GetModifyBlock() == nil || (tx.GetModifyBlock() != nil && !tx.ModifyBlock.Marked) {
-		if err := t.utxo.CheckInputEqualOutput(tx); err != nil {
+		if err := t.utxo.CheckInputEqualOutput(tx, batch); err != nil {
 			return err
 		}
 	}
@@ -1285,6 +1286,7 @@ func (t *State) doTxInternal(tx *pb.Transaction, batch kvdb.Batch, cacheFiller *
 		batch.Delete([]byte(utxoKey)) // 删除用掉的utxo
 		t.utxo.UtxoCache.Remove(string(addr), utxoKey)
 		t.utxo.SubBalance(addr, big.NewInt(0).SetBytes(txInput.Amount))
+		t.utxo.RemoveBatchCache(utxoKey) // 删除 batch cache 中用掉的 utxo。
 	}
 	for offset, txOutput := range tx.TxOutputs {
 		addr := txOutput.ToAddr
@@ -1321,6 +1323,7 @@ func (t *State) doTxInternal(tx *pb.Transaction, batch kvdb.Batch, cacheFiller *
 			// coinbase交易（包括创始块和挖矿奖励)会增加系统的总资产
 			t.utxo.UpdateUtxoTotal(uItem.Amount, batch, true)
 		}
+		t.utxo.InsertBatchCache(utxoKey, uItem) // batch cache 中插入当前交易产生的 utxo。
 	}
 	return nil
 }

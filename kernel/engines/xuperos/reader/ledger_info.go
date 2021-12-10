@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,6 +31,8 @@ type ValidatorsInfo struct {
 type LedgerReader interface {
 	// 查询交易信息（QueryTx）
 	QueryTx(txId []byte) (*xpb.TxInfo, error)
+	// 通过交易哈希（string）查询交易信息
+	QueryTxString(txid string) (*xpb.TxInfo, error)
 	// 查询区块ID信息（GetBlock）
 	QueryBlock(blkId []byte, needContent bool) (*xpb.BlockInfo, error)
 	// 通过区块高度查询区块信息（GetBlockByHeight）
@@ -113,6 +116,16 @@ func (t *ledgerReader) QueryTx(txId []byte) (*xpb.TxInfo, error) {
 	}
 
 	return out, nil
+}
+
+// 通过交易id（string）查询交易信息
+func (t *ledgerReader) QueryTxString(txid string) (*xpb.TxInfo, error) {
+	txId, err := hex.DecodeString(txid)
+	if err != nil {
+		t.log.Warn("V__RPC查询交易哈希格式转换错误", "err", err)
+		return nil, err
+	}
+	return t.QueryTx(txId)
 }
 
 // 注意不需要交易内容的时候不要查询

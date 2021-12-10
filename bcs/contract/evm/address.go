@@ -98,7 +98,8 @@ func DetermineContractAccount(account string) bool {
 	if utils.IsAccount(account) != 1 {
 		return false
 	}
-	return strings.Index(account, "@xuper") != -1
+	//return strings.Index(account, "@xuper") != -1
+	return strings.Index(account, "@") == 18
 }
 
 // determine whether it is a contract name

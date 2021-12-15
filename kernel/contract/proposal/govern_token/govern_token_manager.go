@@ -236,6 +236,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 	if realHeight.Int64()-nowHeight == 2 {
 		// 正常交易处理
 		//fmt.Println("##可用数量", available.Int64())
+		mgr.Ctx.XLog.Info("V__分红提现", "realHeight", realHeight, "nowHeight", nowHeight)
 		if available.Cmp(takeBonus) < 0 {
 			deciAvail := decimal.NewFromInt(available.Int64())
 			point := decimal.NewFromInt(100000000)
@@ -249,6 +250,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 	} else if realHeight.Int64()-nowHeight == 1 {
 		// 在同步
 		//fmt.Println("正常执行计算可用数量", available)
+		mgr.Ctx.XLog.Info("V__sync check bonus", "realHeight", realHeight, "nowHeight", nowHeight)
 		syncAvailable, syncErr := mgr.SyncCheckBonus(ctx, realHeight.Int64())
 		if syncErr != nil {
 			return nil, syncErr
@@ -266,7 +268,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 		}
 	} else {
 		// 高度参数错误，拒绝处理
-		mgr.Ctx.XLog.Warn("提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
+		mgr.Ctx.XLog.Warn("V__提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
 		//fmt.Println("提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
 		return nil, errors.New("V__操作异常，请刷新页面后重试")
 	}

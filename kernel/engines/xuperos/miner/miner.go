@@ -766,6 +766,15 @@ func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
 		if size > sizeLimit {
 			break
 		}
+		for _, request := range tx.ContractRequests {
+			if request.ModuleName == "xkernel" && request.ContractName == "$govern_token" && request.MethodName == "BonusObtain" {
+				args := request.Args
+				realHeight, _ := big.NewInt(0).SetString(string(args["height"]), 10)
+				if realHeight.Int64() - t.ctx.Ledger.GetMeta().TrunkHeight != 2 {
+					continue
+				}
+			}
+		}
 		sizeLimit -= size
 		txList = append(txList, tx)
 	}

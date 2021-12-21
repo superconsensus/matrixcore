@@ -903,7 +903,9 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 		takeBonus, _ := big.NewInt(0).SetString(args["amount"], 10)
 		//fmt.Println("V__开始分红提现写表", hex.EncodeToString(tx.Txid), "当前高度", l.GetMeta().TrunkHeight, "提现数量", takeBonus.Int64())
 		l.xlog.Trace("V__开始分红提现写表", "交易id", hex.EncodeToString(tx.Txid), "当前高度", l.GetMeta().TrunkHeight, "提现数量", takeBonus.Int64())
-		targetHeight, _ := big.NewInt(0).SetString(args["height"], 10)
+		// 高度参数直接在这里从账本获取
+		//targetHeight, _ := big.NewInt(0).SetString(args["height"], 10)
+		targetHeight := big.NewInt(l.meta.GetTrunkHeight()+2)
 
 		if allBonusData.DiscountQueue == nil {
 			allBonusData.DiscountQueue = make(map[int64]*protos.BonusRewardDiscount)

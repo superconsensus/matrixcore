@@ -115,8 +115,10 @@ func (mgr *Manager) BonusQuery(ctx contract.KContext) (*contract.Response, error
 		}
 		//fmt.Println("V__测试校验查询分红", bonusEveryPools)
 
-		for _, discount := range queue {
-			//fmt.Println("提现高度", frozenHeight, "提现情况", discount.UserDiscount)
+		for frozenHeight, discount := range queue {
+			if string(args["show"]) == "yes" {
+				fmt.Println("提现高度", frozenHeight, "提现情况", discount.UserDiscount)
+			}
 			value, ok := discount.UserDiscount[account]
 			if ok {
 				// 提现数量
@@ -221,7 +223,7 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 	nowHeight := ledger.GetMeta().GetTrunkHeight()
 
 	ctx.Args()["account"] = []byte(ctx.Initiator())
-	// height从命令中传过来，已经+2，+1为这笔交易上链的高度，具体到账要在这笔交易之后
+	// height从命令中传过来，实际写账本不依赖这个height了，但为了防止双花和判断同步这个参数又是必要的
 	realHeight, _ := big.NewInt(0).SetString(string(args["height"]), 10)
 	if realHeight == nil {
 		return nil, errors.New("V__缺失height参数")

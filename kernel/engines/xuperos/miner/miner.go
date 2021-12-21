@@ -761,6 +761,7 @@ func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
 	}
 
 	txList := make([]*lpb.Transaction, 0)
+	allTxs:
 	for _, tx := range unconfirmedTxs {
 		size := proto.Size(tx)
 		if size > sizeLimit {
@@ -771,7 +772,8 @@ func (t *Miner) getUnconfirmedTx(sizeLimit int) ([]*lpb.Transaction, error) {
 				args := request.Args
 				realHeight, _ := big.NewInt(0).SetString(string(args["height"]), 10)
 				if realHeight.Int64() - t.ctx.Ledger.GetMeta().TrunkHeight != 2 {
-					continue
+					// 外层循环的continue
+					continue allTxs
 				}
 			}
 		}

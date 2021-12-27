@@ -37,8 +37,8 @@ type LedgerReader interface {
 	QueryBlock(blkId []byte, needContent bool) (*xpb.BlockInfo, error)
 	// 通过区块高度查询区块信息（GetBlockByHeight）
 	QueryBlockByHeight(height int64, needContent bool) (*xpb.BlockInfo, error)
-	//测试
-	Test(address string) (*protos.CandidateRatio, error)
+	// VotesUsage 票数（治理代币）使用情况，包括投票与被投票谁，提名信息，总票数与剩余可用票数等
+	VotesUsage(address string) (*protos.CandidateRatio, error)
 	//
 	PledgeVotingRecords(address string) (*protos.PledgeVotingResponse, error)
 	//
@@ -182,7 +182,7 @@ func (t *ledgerReader) QueryBlockByHeight(height int64, needContent bool) (*xpb.
 	return out, nil
 }
 
-func (t *ledgerReader) Test(address string) (*protos.CandidateRatio, error) {
+func (t *ledgerReader) VotesUsage(address string) (*protos.CandidateRatio, error) {
 
 	out := &protos.CandidateRatio{}
 	keytable := "ballot_" + address

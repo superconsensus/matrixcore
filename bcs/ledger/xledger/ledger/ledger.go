@@ -924,7 +924,7 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 		//allQueue := allBonusData.DiscountQueue
 		// 所有分红池子奖励总和
 		reward := big.NewInt(0)
-		// 提现队列中因冻结而尚未到账的分红奖励
+		// 因为提现成功时会更新债务，所以这里不需要理会提现队列中因冻结而尚未到账的分红奖励数据（查分红用到提现队列只是为了更清楚展示尚未到账的分红奖励数量）
 		for _, pool := range allPools { // miner, pool := range pools
 			// 分红 = 票数 * 每票奖励 - 债务
 			voter, ok := pool.Voters[newestVoter]

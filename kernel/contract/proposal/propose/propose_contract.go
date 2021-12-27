@@ -196,13 +196,13 @@ func (t *KernMethod) Thaw(ctx contract.KContext) (*contract.Response, error) {
 	args := ctx.Args()
 	proposalIDBuf := args["proposal_id"]
 	if proposalIDBuf == nil {
-		return nil, fmt.Errorf("vote failed, proposal_id or amount is nil")
+		return nil, fmt.Errorf("thaw failed, proposal_id or amount is nil")
 	}
 
 	// 获取提案
 	proposal, err := t.getProposal(ctx, string(proposalIDBuf))
 	if err != nil {
-		return nil, fmt.Errorf("vote failed, no proposal found, err: %v", err.Error())
+		return nil, fmt.Errorf("thaw failed, no proposal found, err: %v", err.Error())
 	}
 
 	// 校验提案者身份
@@ -268,7 +268,7 @@ func (t *KernMethod) Query(ctx contract.KContext) (*contract.Response, error) {
 	// 获取提案
 	proposal, err := t.getProposal(ctx, string(proposalIDBuf))
 	if err != nil {
-		return nil, fmt.Errorf("vote failed, no proposal found, err: %v", err.Error())
+		return nil, fmt.Errorf("query failed, no proposal found, err: %v", err.Error())
 	}
 
 	proposalResBuf, err := json.Marshal(proposal)
@@ -309,7 +309,7 @@ func (t *KernMethod) CheckVoteResult(ctx contract.KContext) (*contract.Response,
 	// 获取提案
 	proposal, err := t.getProposal(ctx, string(proposalIDBuf))
 	if err != nil {
-		return nil, fmt.Errorf("vote failed, no proposal found, err: %v", err.Error())
+		return nil, fmt.Errorf("check vote failed, no proposal found, err: %v", err.Error())
 	}
 
 	// 比较提案状态，只有voting状态的提案可以进行检票
@@ -398,7 +398,7 @@ func (t *KernMethod) Trigger(ctx contract.KContext) (*contract.Response, error) 
 	// 获取提案
 	proposal, err := t.getProposal(ctx, string(proposalIDBuf))
 	if err != nil {
-		return nil, fmt.Errorf("vote failed, no proposal found, err: %v", err.Error())
+		return nil, fmt.Errorf("trigger failed, no proposal found, err: %v", err.Error())
 	}
 
 	// 比较提案状态，只有passed状态的提案可以进行提案内容执行

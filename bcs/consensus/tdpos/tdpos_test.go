@@ -133,7 +133,7 @@ func TestProcessBeforeMiner(t *testing.T) {
 		t.Error("NewTdposConsensus error", "conf", getConfig(getTdposConsensusConf()))
 		return
 	}
-	_, _, err = i.ProcessBeforeMiner(time.Now().UnixNano())
+	_, _, err = i.ProcessBeforeMiner(0, time.Now().UnixNano())
 	if err != ErrTimeoutBlock {
 		t.Error("ProcessBeforeMiner error", "err", err)
 	}
@@ -205,6 +205,7 @@ func TestBFT(t *testing.T) {
 		return
 	}
 	tdpos, _ := i.(*tdposConsensus)
+	tdpos.initBFT()
 	l, _ := tdpos.election.ledger.(*kmock.FakeLedger)
 	tdpos.election.address = "dpzuVdosQrF2kmzumhVeFQZa1aYcdgFpN"
 	// 1, 2区块storage修复
@@ -218,7 +219,7 @@ func TestBFT(t *testing.T) {
 	l.SetConsensusStorage(3, SetTdposStorage(3, justify(3)))
 	b33, _ := l.QueryBlockHeaderByHeight(3)
 	tdpos.CheckMinerMatch(&cCtx.BaseCtx, b33)
-	tdpos.ProcessBeforeMiner(1616481107 * int64(time.Millisecond))
+	tdpos.ProcessBeforeMiner(0, 1616481107*int64(time.Millisecond))
 	err = tdpos.ProcessConfirmBlock(b33)
 	if err != nil {
 		t.Error("ProcessConfirmBlock error", "err", err)

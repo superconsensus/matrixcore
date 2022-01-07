@@ -727,6 +727,7 @@ func (l *Ledger) ConfirmBlock(block *pb.InternalBlock, isRoot bool) ConfirmStatu
 	cbNum := 0
 	oldBlockCache := map[string]*pb.InternalBlock{}
 	for _, tx := range realTransactions {
+		// todo 这里最好能校验一下，防止矿工恶意篡改数据，但目前没有想到什么方法实现校验
 		if tx.VoteCoinbase && !bytes.Equal(tx.Desc, []byte("1")) { // 兼容旧版分红奖励
 			// 池子部分更新，每票奖励是在矿工出块时修改的，在这里将修改结果写入
 			// 同时因为矿工打包块的时候已经将【本交易置顶】，所以可以保证更新了每票奖励之后
@@ -903,9 +904,13 @@ func (l *Ledger) Discount(write kvdb.Batch, args map[string]string, initiator st
 		takeBonus, _ := big.NewInt(0).SetString(args["amount"], 10)
 		//fmt.Println("V__开始分红提现写表", hex.EncodeToString(tx.Txid), "当前高度", l.GetMeta().TrunkHeight, "提现数量", takeBonus.Int64())
 		l.xlog.Trace("V__开始分红提现写表", "交易id", hex.EncodeToString(tx.Txid), "当前高度", l.GetMeta().TrunkHeight, "提现数量", takeBonus.Int64())
-		// 高度参数直接在这里从账本获取
-		//targetHeight, _ := big.NewInt(0).SetString(args["height"], 10)
-		targetHeight := big.NewInt(l.meta.GetTrunkHeight()+2)
+		/*
+		 * 同步或接收块时，可能出现：高度增长了几十成百上千之后才开始写这笔交易的情况（即更新写提现表的高度相比应该写的值大了许多），导致后续许多问题
+		 * 比如如果请求时【正常】写表，但新节点同步时出现了这个问题如何判定并规避该提现写表数据错误？
+		 * 如果还原为请求参数中的height的话，可以在governTokenManager/syncCheckBonus中判断提现队列map中写的高度参数（固定为这里的height）与nowHeight识别出来
+		 */
+		targetHeight, _ := big.NewInt(0).SetString(args["height"], 10)
+		//targetHeight := big.NewInt(l.meta.GetTrunkHeight()+2)
 
 		if allBonusData.DiscountQueue == nil {
 			allBonusData.DiscountQueue = make(map[int64]*protos.BonusRewardDiscount)

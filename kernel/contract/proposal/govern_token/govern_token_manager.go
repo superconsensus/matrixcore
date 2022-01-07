@@ -184,7 +184,7 @@ func (mgr *Manager) SyncCheckBonus(ctx contract.KContext, height int64) (*big.In
 		for frozenHeight, discount := range queue {
 			//fmt.Println("同步查询分红，高度", frozenHeight, "提现情况", discount.UserDiscount)
 			value, ok := discount.UserDiscount[account]
-			if ok && frozenHeight == height { // 冻结的高度必须与提现请求一致，才算是在同步
+			if ok && frozenHeight <= height { // == height
 				flag = true
 				// 提现数量
 				amount, _ := big.NewInt(0).SetString(value, 10)
@@ -196,7 +196,8 @@ func (mgr *Manager) SyncCheckBonus(ctx contract.KContext, height int64) (*big.In
 			return reward, nil
 		} else {
 			//fmt.Println("非同步", "请求中的高度参数", height, "当前高度", ledger.GetMeta().TrunkHeight)
-			mgr.Ctx.XLog.Warn("非同步，提现高度出错", "请求中的高度参数", height, "当前高度", ledger.GetMeta().TrunkHeight)
+			mgr.Ctx.XLog.Warn("V__非同步，提现高度出错","计算奖励", reward, "请求中的高度参数", height, "当前高度", ledger.GetMeta().TrunkHeight)
+			mgr.Ctx.XLog.Warn("V__分红提现表", "discountQueue", queue, "bonusPools", pools)
 			return nil, errors.New("V__操作异常，请刷新页面后重试")
 		}
 	} else {
@@ -269,10 +270,16 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 			return nil, fmt.Errorf("V__可供提现分红奖励不足提现数量，可用数量:%.8f,提现数量:%.8f", availFloat, takeFloat)
 		}
 	} else {
-		// 高度参数错误，拒绝处理
-		mgr.Ctx.XLog.Warn("V__提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
-		//fmt.Println("提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
-		return nil, errors.New("V__操作异常，请刷新页面后重试")
+		// 高度参数错误，大概率是因为同步块中的提现交易出现了延迟，使用syncCheck成功通过，否则失败
+		syncAvailable, syncErr := mgr.SyncCheckBonus(ctx, nowHeight)
+		if syncErr != nil {
+			return nil, syncErr
+		}
+		if syncAvailable.Cmp(takeBonus) < 0 {
+			mgr.Ctx.XLog.Warn("V__提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
+			//fmt.Println("提现高度出错", "请求中的高度参数", realHeight.Int64(), "当前高度", nowHeight)
+			return nil, errors.New("V__操作异常，请刷新页面后重试")
+		}
 	}
 	ctx.Args()["height"] = args["height"]
 
@@ -315,8 +322,8 @@ func (mgr *Manager) BonusObtain(ctx contract.KContext) (*contract.Response, erro
 		// 最后一次提现的高度
 		oldHeight, _ := big.NewInt(0).SetString(string(initiatorBytes), 10)
 		lastHeight := oldHeight.Int64()
-		if lastHeight == realHeight.Int64() {
-			return nil, errors.New("V__同一账户一个块内只能提现一次分红")
+		if realHeight.Int64() - lastHeight == 0 {
+			return nil, errors.New("V__操作过于频繁，请稍后重试")
 		} else if lastHeight > realHeight.Int64() {
 			return nil, errors.New("V__交易请求超过当前区块高度，无法处理")
 		}

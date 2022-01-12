@@ -236,6 +236,14 @@ func (t *State) GetAccountContracts(account string) ([]string, error) {
 	return t.utxo.GetAccountContracts(account)
 }
 
+func (t *State) GetUnconfirmedTxFromId(txid []byte) (*pb.Transaction, bool) {
+	tx, ok := t.tx.UnconfirmTxInMem.Load(string(txid))
+	if ok {
+		return tx.(*pb.Transaction), true
+	}
+	return nil, false
+}
+
 // 查询合约状态
 func (t *State) GetContractStatus(contractName string) (*protos.ContractStatus, error) {
 	res := &protos.ContractStatus{}

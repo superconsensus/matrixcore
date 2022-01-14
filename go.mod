@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/aws/aws-sdk-go v1.32.4
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
-	github.com/dgraph-io/badger/v2 v2.0.0-rc.2
+	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.1-0.20201118132343-79df803e554c
 	github.com/fsouza/go-dockerclient v1.6.0
@@ -34,7 +34,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/xuperchain/crypto v0.0.0-20211221122406-302ac826ac90
 	github.com/xuperchain/log15 v0.0.0-20190620081506-bc88a9198230
-	github.com/xuperchain/xupercore v0.0.0-20210908121436-f3461a4e5fb1
+	github.com/xuperchain/xupercore v0.0.0-20220113084037-cb569d882015
 	github.com/xuperchain/xvm v0.0.0-20210126142521-68fd016c56d7
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9

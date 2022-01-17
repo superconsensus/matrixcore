@@ -30,7 +30,7 @@ import (
 // runNominateCandidate 执行提名候选人
 func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*contract.Response, error) {
 	// 1.1 核查nominate合约参数有效性
-	candidateName, err := tp.checkArgs(contractCtx.Args())
+	candidateName, height, err := tp.checkArgs(contractCtx.Args())
 	if err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
@@ -64,9 +64,15 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 
 	// 2. 读取提名候选人key
 	nKey := fmt.Sprintf("%s_%d_%s", tp.status.Name, tp.status.Version, nominateKey)
+	// 旧版本数据需要通过快照获取，新代码直接ctx.get
 	res, err := contractCtx.Get(tp.election.bindContractBucket, []byte(nKey))
 	if err != nil && err.Error() != ErrNotFound.Error() {
-		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		if height != -1 { // 等于-1表示该交易为新版模型，提名/投票及撤销没有height参数（旧版本用于创建快照bucket get）
+			res, err = tp.election.getSnapshotKey(height, tp.election.bindContractBucket, []byte(nKey))
+			if err != nil {
+				return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+			}
+		}
 	}
 	nominateValue := NewNominateValue()
 	if res != nil { // 非首次初始化
@@ -133,7 +139,7 @@ func (tp *tdposConsensus) runNominateCandidate(contractCtx contract.KContext) (*
 // Args: candidate::候选人钱包地址
 func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*contract.Response, error) {
 	// 核查撤销nominate合约参数有效性
-	candidateName, err := tp.checkArgs(contractCtx.Args())
+	candidateName, height, err := tp.checkArgs(contractCtx.Args())
 	if err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
@@ -141,7 +147,12 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	nKey := fmt.Sprintf("%s_%d_%s", tp.status.Name, tp.status.Version, nominateKey)
 	res, err := contractCtx.Get(tp.election.bindContractBucket, []byte(nKey))
 	if err != nil {
-		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		if height != -1 {
+			res, err = tp.election.getSnapshotKey(height, tp.election.bindContractBucket, []byte(nKey))
+			if err != nil {
+				return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+			}
+		}
 	}
 	nominateValue := NewNominateValue()
 	if res != nil {
@@ -297,7 +308,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 //       amount::投票者票数
 func (tp *tdposConsensus) runVote(contractCtx contract.KContext) (*contract.Response, error) {
 	// 1.1 验证合约参数是否正确
-	candidateName, err := tp.checkArgs(contractCtx.Args())
+	candidateName, height, err := tp.checkArgs(contractCtx.Args())
 	if err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
@@ -322,7 +333,13 @@ func (tp *tdposConsensus) runVote(contractCtx contract.KContext) (*contract.Resp
 	// 1.3 检查vote的地址是否在候选人池中，快照读取候选人池，vote相关参数一定是会在nominate列表中显示
 	res, err := contractCtx.Get(tp.election.bindContractBucket, []byte(fmt.Sprintf("%s_%d_%s", tp.status.Name, tp.status.Version, nominateKey)))
 	if err != nil {
-		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		if height != -1 {
+			// 虽然提名/投票以及撤销都用height这个方式来兼容旧版，但就测试结果来看好像只有投票会走到这个if中，其它方法都能通过ctx.get获取到数据，奇怪
+			res, err = tp.election.getSnapshotKey(height, tp.election.bindContractBucket, []byte(fmt.Sprintf("%s_%d_%s", tp.status.Name, tp.status.Version, nominateKey)))
+			if err != nil {
+				return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+			}
+		}
 	}
 	nominateValue := NewNominateValue()
 	if err := json.Unmarshal(res, &nominateValue); err != nil {
@@ -399,7 +416,7 @@ func (tp *tdposConsensus) runVote(contractCtx contract.KContext) (*contract.Resp
 //       amount: 投票数
 func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contract.Response, error) {
 	// 1.1 验证合约参数
-	candidateName, err := tp.checkArgs(contractCtx.Args())
+	candidateName, height, err := tp.checkArgs(contractCtx.Args())
 	if err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
 	}
@@ -423,8 +440,13 @@ func (tp *tdposConsensus) runRevokeVote(contractCtx contract.KContext) (*contrac
 	voteKey := fmt.Sprintf("%s_%d_%s%s", tp.status.Name, tp.status.Version, voteKeyPrefix, candidateName)
 	res, err := contractCtx.Get(tp.election.bindContractBucket, []byte(voteKey))
 	if err != nil {
-		tp.log.Error("tdpos::runRevokeVote::load vote read set err when get key.")
-		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+		if height != -1 {
+			res, err = tp.election.getSnapshotKey(height, tp.election.bindContractBucket, []byte(voteKey))
+			if err != nil {
+				tp.log.Error("tdpos::runRevokeVote::load vote read set err when get key.")
+				return common.NewContractErrResponse(common.StatusErr, err.Error()), err
+			}
+		}
 	}
 	voteValue := NewvoteValue()
 	if err := json.Unmarshal(res, &voteValue); err != nil {
@@ -602,13 +624,26 @@ func (tp *tdposConsensus) runGetTdposInfos(contractCtx contract.KContext) (*cont
 	return common.NewContractOKResponse([]byte(r)), nil
 }
 
-func (tp *tdposConsensus) checkArgs(txArgs map[string][]byte) (string, error) {
+func (tp *tdposConsensus) checkArgs(txArgs map[string][]byte) (string, int64, error) {
 	candidateBytes := txArgs["candidate"]
 	candidateName := string(candidateBytes)
 	if candidateName == "" {
-		return "", ErrNominateAddr
+		return "", 0, ErrNominateAddr
 	}
-	return candidateName, nil
+	// 考虑旧版本高度传参 和新版本不传height参数
+	heightBytes, ok := txArgs["height"]
+	if !ok { // 新版本不传height参数，返回标记-1
+		return candidateName, -1, nil
+	}
+	heightStr := string(heightBytes)
+	height, err := strconv.ParseInt(heightStr, 10, 64)
+	if err != nil {
+		return "", 0, ErrNotFound
+	}
+	//if height <= tp.status.StartHeight || height > tp.election.ledger.GetTipBlock().GetHeight() {
+	//	return "", 0, errors.New("Input height invalid. Pls wait seconds.")
+	//}
+	return candidateName, height, nil
 }
 
 //检查分红比

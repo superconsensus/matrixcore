@@ -404,13 +404,20 @@ func (t *NetEvent) handleGetBlockHeaders(ctx xctx.XContext,
 			}
 			// 拷贝区块头，避免修改原缓存
 			block := *blkInfo.Block
+			// 矩链出块多了一笔置顶交易，因此coinbase交易顺延到了第二位（即block.MerkleTree[1]）
 			// 取coinbase交易
 			if block.TxCount > 0 {
-				txid := block.MerkleTree[0]
+				bonusTxid := block.MerkleTree[0] // 置顶的分红情况交易
+				bonusTx, err := ledgerReader.QueryTx(bonusTxid)
+				if err == nil {
+					// 避免修改Transactions结构
+					block.Transactions = []*lpb.Transaction{bonusTx.GetTx()}
+				}
+				txid := block.MerkleTree[1]// 真正的出块奖励交易
 				coinbaseTx, err := ledgerReader.QueryTx(txid)
 				if err == nil {
 					// 避免修改Transactions结构
-					block.Transactions = []*lpb.Transaction{coinbaseTx.GetTx()}
+					block.Transactions = append(block.Transactions, coinbaseTx.GetTx())
 				}
 			}
 			ctx.GetLog().Debug("query block header", "height", height, "size", proto.Size(&block))

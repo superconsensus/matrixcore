@@ -256,9 +256,15 @@ func (t *Miner) fillBlockTxs(ctx xctx.XContext, block *lpb.InternalBlock) error 
 	txids := block.GetMerkleTree()[:block.GetTxCount()]
 
 	blockTxs := make([]*lpb.Transaction, len(txids))
+	// 矩链改后coinbase交易应为block.Transaction[1]，这笔交易在kernel/engines/xuperos/net/net_event的handleGetBlockHeaders()中已经处理好了，这里transaction还有一笔指定分红信息交易
 	if len(block.Transactions) > 0 && block.Transactions[0] != nil {
-		// 取coinbase交易
+		// 置顶的分红信息交易
 		blockTxs[0] = block.Transactions[0]
+	}
+	// 这两笔交易是凭空产生的，其它普通转账交易（包括合约交易）通常都会广播到全网，每个节点同步块中的普通交易时只需要在自己的unconfirmed表中取即可（line275），如缺失再向p2p网络邻居下载
+	if len(block.Transactions) > 0 && block.Transactions[1] != nil {
+		// 取coinbase交易
+		blockTxs[1] = block.Transactions[1] // 真正的coinbase在第二位
 	}
 
 	var missingTxIdx []int32

@@ -40,10 +40,29 @@ func NewParaChainManager(ctx *ParaChainCtx) (*Manager, error) {
 	register := ctx.Contract.GetKernRegistry()
 	// 注册合约方法
 	kMethods := map[string]contract.KernMethod{
+		// 在链名单中: group.admin/identities -> group.admin/identities/secAdmin
 		"createChain": t.createChain,
-		"editGroup":   t.editGroup,
+		//"editGroup":   t.editGroup, // 停用此方法
 		"getGroup":    t.getGroup,
 		"stopChain":   t.stopChain,
+		// 创链者管理管理员（参数可批量）
+		"adminManage":		t.adminManage,
+		// 管理员邀请加入（参数可批量）
+		"inviteMembers":	t.inviteMembers,
+		// 处理邀请，同意/拒绝
+		"inviteHandle":		t.inviteHandle,
+		// 管理员剔除成员（参数可批量）
+		"removeMembers":	t.removeMembers,
+		// 申请加入
+		"joinApply":		t.joinApply,
+		// 管理员对加入申请处理（参数可批量）
+		"joinHandle":		t.joinHandle,
+		// 主动退出
+		"exitChain":		t.exitChain,
+		// 查询历史邀请申请消息
+		"getHistory":  t.getHistory,
+		// 清理过期邀请/申请消息
+		//"cleanExpiration":  t.cleanExpiration,
 	}
 	for method, f := range kMethods {
 		if _, err := register.GetKernMethod(ParaChainKernelContract, method); err != nil {

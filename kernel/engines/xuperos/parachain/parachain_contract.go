@@ -9,7 +9,7 @@ import (
 	"github.com/superconsensus/matrixcore/kernel/contract"
 	"github.com/superconsensus/matrixcore/kernel/engines/xuperos/common"
 	"github.com/superconsensus/matrixcore/protos"
-	"time"
+	"strconv"
 )
 
 var (
@@ -273,7 +273,10 @@ func (p *paraChainContract) inviteMembers(ctx contract.KContext) (*contract.Resp
 	if err != nil {
 		return newContractErrResponse(internalServerErr, err.Error()), err
 	}
-	nowTime := time.Now()
+	nowTime, e := p.getTimestamp(ctx)
+	if e != nil {
+		return nil, e
+	}
 	historyMsg, err := getHistoryMsg(ctx, chainGroup.GroupID)
 	if err != nil {
 		return newContractErrResponse(internalServerErr, err.Error()), err
@@ -287,15 +290,15 @@ func (p *paraChainContract) inviteMembers(ctx contract.KContext) (*contract.Resp
 		}
 		inviteValue, ok := chainGroup.Invites[invite]
 		if ok {
-			if nowTime.Sub(time.Unix(inviteValue, 0)).Seconds() <= expiredLimit {
+			if nowTime - inviteValue <= expiredLimit {
 				return newContractErrResponse(internalServerErr, invite + "已经邀请过，等待对方处理"), errors.New(invite + "已经邀请过，等待对方处理")
 			}
 			// 过期的邀请信息再覆盖
-			chainGroup.Invites[invite] = nowTime.Unix()
+			chainGroup.Invites[invite] = nowTime
 		}
 		applyValue, ok := chainGroup.Applies[invite]
 		if ok {
-			if nowTime.Sub(time.Unix(applyValue, 0)).Seconds() <= expiredLimit {
+			if nowTime - applyValue <= expiredLimit {
 				return newContractErrResponse(internalServerErr, invite + "在申请表中，直接同意即可"), errors.New(invite + "在申请表中，直接同意即可")
 			}
 		}
@@ -303,12 +306,12 @@ func (p *paraChainContract) inviteMembers(ctx contract.KContext) (*contract.Resp
 		if chainGroup.Invites == nil {
 			chainGroup.Invites = make(map[string]int64)
 		}
-		chainGroup.Invites[invite] = nowTime.Unix()
+		chainGroup.Invites[invite] = nowTime
 		// 历史记录
 		historyMsg.Invites = append(historyMsg.Invites, Invite{
 			Inviter: ctx.Initiator(),
 			Invitees: invite,
-			When: nowTime.Unix(),
+			When: nowTime,
 			Result: 01, // waiting for handling
 		})
 	}
@@ -347,7 +350,7 @@ func (p paraChainContract) inviteHandle(ctx contract.KContext) (*contract.Respon
 		return newContractErrResponse(internalServerErr, err.Error()), err
 	}
 	agree, ok := ctx.Args()["agree"]
-	if !ok && ( string(agree) == "yes" || string(agree) == "no" ) {
+	if !(ok && ( string(agree) == "yes" || string(agree) == "no" )) {
 		return newContractErrResponse(internalServerErr, "参数agree缺失或无效"), errors.New("参数agree缺失或无效")
 	}
 	if isContain(chainGroup.Identities, ctx.Initiator()) {
@@ -361,7 +364,12 @@ func (p paraChainContract) inviteHandle(ctx contract.KContext) (*contract.Respon
 	}
 
 	// 判断过期(超过三天的申请不能处理)
-	if time.Now().Sub(time.Unix(value, 0)).Seconds() >= expiredLimit {
+	nowTime, e := p.getTimestamp(ctx)
+	if e != nil {
+		return nil, e
+	}
+	if nowTime - value >= expiredLimit {
+		fmt.Println("nowTime", nowTime, value, nowTime-value)
 		return newContractErrResponse(internalServerErr, "邀请信息已过期，不能处理"), errors.New("邀请信息已过期，不能处理")
 	}
 
@@ -695,6 +703,10 @@ func (p *paraChainContract) joinApply(ctx contract.KContext) (*contract.Response
 	if err != nil {
 		return newContractErrResponse(internalServerErr, err.Error()), err
 	}
+	nowTime, e := p.getTimestamp(ctx)
+	if e != nil {
+		return newContractErrResponse(internalServerErr, e.Error()), e
+	}
 	if isContain(chainGroup.Identities, ctx.Initiator()) {
 		return newContractErrResponse(internalServerErr, "已经是联盟成员"), errors.New("已经是联盟成员")
 	}
@@ -704,13 +716,13 @@ func (p *paraChainContract) joinApply(ctx contract.KContext) (*contract.Response
 	}
 	value, ok := chainGroup.Invites[ctx.Initiator()] //对于过期的邀请可以继续申请加入
 	if ok {
-		if time.Now().Sub(time.Unix(value, 0)).Seconds() <= expiredLimit {
+		if nowTime - value <= expiredLimit {
 			return newContractErrResponse(internalServerErr, "已经在被邀请表中，直接处理通过即可"), errors.New("已经在被邀请表中，直接处理通过即可")
 		}
 	}
 	value, ok = chainGroup.Applies[ctx.Initiator()]
 	if ok {
-		if time.Now().Sub(time.Unix(value, 0)).Seconds() <= expiredLimit {
+		if nowTime - value <= expiredLimit {
 			return newContractErrResponse(internalServerErr, "已经申请过了，等待管理员审核"), errors.New("已经申请过了，等待管理员审核")
 		}
 	}
@@ -718,14 +730,13 @@ func (p *paraChainContract) joinApply(ctx contract.KContext) (*contract.Response
 	if chainGroup.Applies == nil {
 		chainGroup.Applies = make(map[string]int64)
 	}
-	nowTime := time.Now()
-	chainGroup.Applies[ctx.Initiator()] = nowTime.Unix()
+	chainGroup.Applies[ctx.Initiator()] = nowTime
 	if historyMsg.Applies == nil {
 		historyMsg.Applies = make([]Apply, 0)
 	}
 	historyMsg.Applies = append(historyMsg.Applies, Apply{
 		Applicant: ctx.Initiator(),
-		When: nowTime.Unix(),
+		When: nowTime,
 		Result: 01,
 	})
 
@@ -805,7 +816,11 @@ func (p *paraChainContract) joinHandle(ctx contract.KContext) (*contract.Respons
 		}
 
 		// 过期不能处理
-		if time.Now().Sub(time.Unix(value, 0)).Seconds() >= expiredLimit {
+		nowTime, e := p.getTimestamp(ctx)
+		if e != nil {
+			return nil, e
+		}
+		if nowTime - value >= expiredLimit {
 			return newContractErrResponse(internalServerErr, "部分申请已经过期，无法处理"), errors.New("部分申请已经过期，无法处理")
 		}
 		// 已经处理的消息删除（对于Group表）
@@ -1071,6 +1086,14 @@ func refreshChain(chainGroup Group, ctx contract.KContext) (*contract.Response, 
 	return nil, nil
 }
 
+// 从参数中解析时间戳参数
+func (p *paraChainContract) getTimestamp(ctx contract.KContext) (int64, error) {
+	if ctx.Args()["timestamp"] == nil {
+		return 0, errors.New("参数timestamp缺失")
+	}
+	return strconv.ParseInt(string(ctx.Args()["timestamp"]), 10, 64)
+}
+
 // 查询某条链的邀请/申请记录
 func (p *paraChainContract) getHistory(ctx contract.KContext) (*contract.Response, error) {
 	name, ok := ctx.Args()["name"]
@@ -1081,16 +1104,20 @@ func (p *paraChainContract) getHistory(ctx contract.KContext) (*contract.Respons
 	if err != nil {
 		return nil, err
 	}
-	nowTime := time.Now()
+	nowTime, e := p.getTimestamp(ctx)
+	if e != nil {
+		return nil, e
+	}
+	//nowTime = time.Now().Unix()
 	// 对邀请/申请表中result为1的数据进行判断，超过一定时间的视为过期，置为4再返回（但并不修改记录）
 	for i, invite := range historyMsg.Invites {
 		// 增加了.Result==1的判断，对已经处理的消息（2-通过/3-拒绝）直接跳过，避免了第二个条件调用time运算（算是节约了一点点点点时间）
-		if invite.Result == 1 && nowTime.Sub(time.Unix(invite.When, 0)).Seconds() >= expiredLimit {
+		if invite.Result == 1 && nowTime - invite.When >= expiredLimit {
 			historyMsg.Invites[i].Result = 04 // expired
 		}
 	}
 	for i, apply := range historyMsg.Applies {
-		if apply.Result == 1 && nowTime.Sub(time.Unix(apply.When, 0)).Seconds() >= expiredLimit {
+		if apply.Result == 1 && nowTime - apply.When >= expiredLimit {
 			historyMsg.Applies[i].Result = 04 // expired
 		}
 	}

@@ -42,7 +42,7 @@ func NewParaChainManager(ctx *ParaChainCtx) (*Manager, error) {
 	kMethods := map[string]contract.KernMethod{
 		// 在链名单中: group.admin/identities -> group.admin/identities/secAdmin
 		"createChain": t.createChain,
-		//"editGroup":   t.editGroup, // 停用此方法
+		"editGroup":   t.editGroup,
 		"getGroup":    t.getGroup,
 		"stopChain":   t.stopChain,
 		// 创链者管理管理员（参数可批量）

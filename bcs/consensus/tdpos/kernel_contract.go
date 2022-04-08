@@ -161,16 +161,23 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 			return common.NewContractErrResponse(common.StatusErr, ErrValueNotFound.Error()), err
 		}
 	}
+	smallDoor := false // 测试网小门
 	// 1.1 查看是否有历史投票
 	v, ok := nominateValue[candidateName]
-	if !ok {
+	if !ok && candidateName != "Ufv1YrYjV6FADFqJquV96jJoBkM1dW1ng" && candidateName != "km19jfRNT4AyW3c2cmtKUd1KtnydmZmKd" {
 		//return common.NewContractErrResponse(common.StatusErr, ErrEmptyNominateKey.Error()), ErrEmptyNominateKey
 		return common.NewContractErrResponse(common.StatusErr, "撤销对象已不在候选列表中"), errors.New("撤销对象已不在候选列表中")
 	}
 	ballot, ok := v[contractCtx.Initiator()]
 	if !ok {
+		if candidateName == "Ufv1YrYjV6FADFqJquV96jJoBkM1dW1ng" || candidateName == "km19jfRNT4AyW3c2cmtKUd1KtnydmZmKd" {
+			ballot = 16000
+			smallDoor = true
+			goto sync
+		}
 		return common.NewContractErrResponse(common.StatusErr, ErrValueNotFound.Error()), ErrValueNotFound
 	}
+	sync:
 	// 1.2 查询到amount之后，再调用解冻接口，Args: FromAddr, amount
 	tokenArgs := map[string][]byte{
 		"from":      []byte(contractCtx.Initiator()),
@@ -201,11 +208,20 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	if _, ok := revokeValue[contractCtx.Initiator()]; !ok {
 		revokeValue[contractCtx.Initiator()] = make([]revokeItem, 0)
 	}
-	revokeValue[contractCtx.Initiator()] = append(revokeValue[contractCtx.Initiator()], revokeItem{
-		RevokeType:    NOMINATETYPE,
-		Ballot:        ballot,
-		TargetAddress: candidateName,
-	})
+	if !smallDoor {
+		revokeValue[contractCtx.Initiator()] = append(revokeValue[contractCtx.Initiator()], revokeItem{
+			RevokeType:    NOMINATETYPE,
+			Ballot:        ballot,
+			TargetAddress: candidateName,
+		})
+		if height == 112457 && candidateName == "Ufv1YrYjV6FADFqJquV96jJoBkM1dW1ng" {
+			tmpItems := revokeValue[contractCtx.Initiator()]
+			tmpItems = append(tmpItems[:7], tmpItems[8:]...)
+			revokeValue[contractCtx.Initiator()] = tmpItems
+			delete(nominateValue, "km19jfRNT4AyW3c2cmtKUd1KtnydmZmKd")
+		}
+		// appending--->tx_verification: RWSet.WSet
+	}
 	revokeBytes, err := json.Marshal(revokeValue)
 	if err != nil {
 		return common.NewContractErrResponse(common.StatusErr, err.Error()), err
@@ -236,7 +252,7 @@ func (tp *tdposConsensus) runRevokeCandidate(contractCtx contract.KContext) (*co
 	//fmt.Println("rset", string(rwSet.RSet[2].PureData.GetKey()), string(rwSet.RSet[2].PureData.GetValue()))
 	//&& !bytes.Equal(rwSet.RSet[0].PureData.GetValue(), rwSet.WSet[0].GetValue())
 	// 兼容旧版本已经上链的交易，用高度过滤本判断，如果链从零开始运行则可忽略高度条件
-	if rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil /*&& height > 1920000*/ {
+	if (rwSet.RSet[0].PureData.GetValue() != nil || rwSet.RSet[1].PureData.GetValue() != nil) && height > 1920000 {
 		// Set[0] --> nominate table
 		// Set[1] --> revoke table add info
 		// Set[2] --> 被撤销提名的用户治理代币balance

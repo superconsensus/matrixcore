@@ -1,16 +1,16 @@
 package evm
 
 import (
-	_ "github.com/xuperchain/xupercore/bcs/contract/evm"
-	_ "github.com/xuperchain/xupercore/bcs/contract/native"
-	_ "github.com/xuperchain/xupercore/bcs/contract/xvm"
+	_ "github.com/superconsensus/matrixcore/bcs/contract/evm"
+	_ "github.com/superconsensus/matrixcore/bcs/contract/native"
+	_ "github.com/superconsensus/matrixcore/bcs/contract/xvm"
 
 	"encoding/hex"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	_ "github.com/xuperchain/xupercore/kernel/contract"
-	_ "github.com/xuperchain/xupercore/kernel/contract/kernel"
-	_ "github.com/xuperchain/xupercore/kernel/contract/manager"
-	"github.com/xuperchain/xupercore/kernel/contract/mock"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	_ "github.com/superconsensus/matrixcore/kernel/contract"
+	_ "github.com/superconsensus/matrixcore/kernel/contract/kernel"
+	_ "github.com/superconsensus/matrixcore/kernel/contract/manager"
+	"github.com/superconsensus/matrixcore/kernel/contract/mock"
 	"io/ioutil"
 	"testing"
 )

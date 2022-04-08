@@ -303,7 +303,16 @@ func (c *FakeKContext) VerifyContractOwnerPermission(contractName string, authRe
 }
 
 func (c *FakeKContext) RWSet() *contract.RWSet {
-	return nil
+	// 解决kernel_contract_test的runNominateCandidate（line105）错误
+	RSet := make([]*ledger.VersionedData, 0)
+	RSet = append(RSet, &ledger.VersionedData{
+		PureData: &ledger.PureData{
+			Bucket: "xxx",
+		},
+	})
+	return &contract.RWSet{
+		RSet: RSet,
+	}
 }
 
 func (c *FakeKContext) AddEvent(events ...*protos.ContractEvent) {}

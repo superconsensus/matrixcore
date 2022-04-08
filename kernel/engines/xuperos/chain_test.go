@@ -89,6 +89,23 @@ func mockTransferTx(chain common.Chain) (*lpb.Transaction, error) {
 	return tx, nil
 }
 
+// 创世块文件core/kernel/mock/data/genesis/xuper.json变动时自动更新创世交易id
+func updateGenesisTxid(chain common.Chain) error {
+	// 获取创世块
+	rootblk, err := chain.Context().Ledger.QueryBlockByHeight(0)
+	if err != nil {
+		return fmt.Errorf("****** update genesis txid err ******: %v", err)
+	} else {
+		// 获取创世块根交易id
+		for i, transaction := range rootblk.Transactions {
+			if i == 0 {
+				adminTxId = transaction.Txid
+			}
+		}
+	}
+	return nil
+}
+
 func TestChain_SubmitTx(t *testing.T) {
 	engine, err := MockEngine("p2pv2/node1/conf/env.yaml")
 	if err != nil {
@@ -102,6 +119,11 @@ func TestChain_SubmitTx(t *testing.T) {
 	if err != nil {
 		t.Errorf("get chain error: %v", err)
 		return
+	}
+	chain.Context().Ledger.GenesisBlock.GetConfig().NoFee = true
+	err = updateGenesisTxid(chain)
+	if err != nil {
+		t.Error(err)
 	}
 
 	tx, err := mockTransferTx(chain)
@@ -209,6 +231,10 @@ func TestChain_PreExec(t *testing.T) {
 	if err != nil {
 		t.Errorf("get chain error: %v", err)
 		return
+	}
+	err = updateGenesisTxid(chain)
+	if err != nil {
+		t.Error(err)
 	}
 
 	tx, err := mockContractTx(chain)

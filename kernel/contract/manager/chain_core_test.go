@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	log15 "github.com/xuperchain/log15"
-	_ "github.com/xuperchain/xupercore/bcs/contract/native"
-	"github.com/xuperchain/xupercore/kernel/contract"
-	_ "github.com/xuperchain/xupercore/kernel/contract/kernel"
-	"github.com/xuperchain/xupercore/kernel/contract/mock"
+	_ "github.com/superconsensus/matrixcore/bcs/contract/native"
+	"github.com/superconsensus/matrixcore/kernel/contract"
+	_ "github.com/superconsensus/matrixcore/kernel/contract/kernel"
+	"github.com/superconsensus/matrixcore/kernel/contract/mock"
 )
 
 const (

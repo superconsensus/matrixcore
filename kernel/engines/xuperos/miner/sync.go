@@ -262,7 +262,7 @@ func (t *Miner) fillBlockTxs(ctx xctx.XContext, block *lpb.InternalBlock) error 
 		blockTxs[0] = block.Transactions[0]
 	}
 	// 这两笔交易是凭空产生的，其它普通转账交易（包括合约交易）通常都会广播到全网，每个节点同步块中的普通交易时只需要在自己的unconfirmed表中取即可（line275），如缺失再向p2p网络邻居下载
-	if len(block.Transactions) > 0 && block.Transactions[1] != nil {
+	if len(block.Transactions) > 1 && block.Transactions[1] != nil {
 		// 取coinbase交易
 		blockTxs[1] = block.Transactions[1] // 真正的coinbase在第二位
 	}
@@ -405,6 +405,7 @@ func (t *Miner) batchConfirmBlocks(ctx xctx.XContext, blocks []*lpb.InternalBloc
 		err = t.ctx.State.PlayAndRepost(block.Blockid, false, false)
 		if err != nil {
 			ctx.GetLog().Warn("state play error", "error", err, "height", block.Height, "blockId", utils.F(block.Blockid))
+			return err
 		}
 		trace("PlayAndRepost")
 		timer.Mark("PlayAndRepost")

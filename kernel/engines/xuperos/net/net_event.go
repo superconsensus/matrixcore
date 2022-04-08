@@ -409,15 +409,23 @@ func (t *NetEvent) handleGetBlockHeaders(ctx xctx.XContext,
 			if block.TxCount > 0 {
 				bonusTxid := block.MerkleTree[0] // 置顶的分红情况交易
 				bonusTx, err := ledgerReader.QueryTx(bonusTxid)
+				/**
+				 * 注: merkleTree下面简称mTree
+				 * 对旧链来说，mTree[0]可能是出块奖励，如果是出块奖励，mTree[1]一定不是出块奖励，后面会过滤掉
+				 * 如果是新链，mTree[0]是bonus，mTree[1]是coinbase，这个时候可以append到block.Transactions中
+				 * 无论如何，mTree[0]存在的话，是一定要写到block.Transactions中的
+				 */
 				if err == nil {
 					// 避免修改Transactions结构
 					block.Transactions = []*lpb.Transaction{bonusTx.GetTx()}
 				}
-				txid := block.MerkleTree[1]// 真正的出块奖励交易
-				coinbaseTx, err := ledgerReader.QueryTx(txid)
-				if err == nil {
-					// 避免修改Transactions结构
-					block.Transactions = append(block.Transactions, coinbaseTx.GetTx())
+				if len(block.MerkleTree) > 1 {
+					txid := block.MerkleTree[1] // 可能是真正的出块奖励交易 如果不是则过滤掉
+					coinbaseTx, err := ledgerReader.QueryTx(txid)
+					if err == nil && coinbaseTx.GetTx().GetCoinbase() { // 确保这笔交易是出块奖励交易
+						// 避免修改Transactions结构
+						block.Transactions = append(block.Transactions, coinbaseTx.GetTx())
+					}
 				}
 			}
 			ctx.GetLog().Debug("query block header", "height", height, "size", proto.Size(&block))
